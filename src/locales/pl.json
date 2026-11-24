@@ -3089,6 +3089,8 @@
     "Asset": "Aktywo",
     "Price": "Cena",
     "Auto-update Asset Prices": "Automatyczna aktualizacja cen aktywów",
+    "Offline mode is on: prices are not fetched from the internet. Enter them manually.": "Tryb offline jest włączony: ceny nie są pobierane z internetu. Wpisz je ręcznie.",
+    "Offline mode is on: nothing is fetched from the internet.": "Tryb offline jest włączony: nic nie jest pobierane z internetu.",
     "Fetch Prices Now": "Pobierz ceny teraz",
     "Source": "Źródło",
     "Manual": "Ręcznie",

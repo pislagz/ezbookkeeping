@@ -1,5 +1,7 @@
 # Assets: precious metals and crypto currencies
 
+> Privacy / no-internet operation: set `[network] offline_mode = true` (env `EBK_NETWORK_OFFLINE_MODE=true`) to switch off the automatic price fetching (and every other outbound request of the server). Manual prices, the history and the charts keep working. See [OFFLINE.md](OFFLINE.md).
+
 This fork lets an account use a precious metal (gold `XAU`, silver `XAG`) or a crypto asset (BTC, ETH, SOL, USDT, USDC, XRP, ADA, DOGE, DOT, LTC, BNB, AVAX, LINK, XMR, TRX) as its "currency".
 This document describes the design of the foundation (PR #1) and the hooks that later PRs (price history, auto fetch, charts) plug into.
 

@@ -514,6 +514,9 @@ type Config struct {
 	// Asset Prices
 	EnableAssetPricesAutoUpdate bool
 
+	// Network
+	OfflineMode bool
+
 	// Developer Tools
 	EnableLanguagePreview bool
 }
@@ -677,7 +680,29 @@ func LoadConfiguration(configFilePath string) (*Config, error) {
 		return nil, err
 	}
 
+	config.OfflineMode = getConfigItemBoolValue(cfgFile, "network", "offline_mode", false)
+	applyOfflineMode(config)
+
 	return config, nil
+}
+
+// applyOfflineMode turns off the features of the server and the frontend which need an outbound connection to a public service.
+// Exchange rates and asset prices are not fetched (see the exchangerates and assetprices packages, which check Config.OfflineMode),
+// the map is disabled (no external tiles / scripts), and the gravatar avatar provider (the browser would load images from gravatar.com) is disabled.
+// Services which the user configures explicitly (smtp, object storage, oauth2, llm) are not affected.
+func applyOfflineMode(config *Config) {
+	if !config.OfflineMode {
+		return
+	}
+
+	config.EnableAssetPricesAutoUpdate = false
+	config.MapProvider = ""
+	config.EnableMapDataFetchProxy = false
+	config.SupportMapDataFetchProxy = false
+
+	if config.AvatarProvider == core.USER_AVATAR_PROVIDER_GRAVATAR {
+		config.AvatarProvider = ""
+	}
 }
 
 // GetDefaultConfigFilePath returns the defaule config file path

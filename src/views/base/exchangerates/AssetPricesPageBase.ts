@@ -1,3 +1,4 @@
+import { isOfflineMode } from '@/lib/server_settings.ts';
 import { ref, computed } from 'vue';
 
 import { useI18n } from '@/locales/helpers.ts';
@@ -41,6 +42,8 @@ export interface AssetPriceHistoryItem {
 // Metal prices are also displayed per troy ounce for convenience. Manual entries always win over automatic ones of the same date.
 export function useAssetPricesPageBase() {
     const { tt, getCurrencyName } = useI18n();
+
+    const offlineMode = isOfflineMode();
 
     const userStore = useUserStore();
     const assetPricesStore = useAssetPricesStore();
@@ -137,6 +140,10 @@ export function useAssetPricesPageBase() {
     }
 
     function fetchNow(): Promise<unknown> {
+        if (offlineMode) {
+            return Promise.resolve();
+        }
+
         return assetPricesStore.fetchAssetPricesNow();
     }
 
@@ -162,6 +169,7 @@ export function useAssetPricesPageBase() {
     return {
         // states
         loading,
+        offlineMode,
         defaultCurrency,
         assetPrices,
         history,

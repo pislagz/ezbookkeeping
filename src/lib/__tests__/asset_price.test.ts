@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import {
     shouldAutoUpdateAssetPrices,
+    shouldRequestAssetPriceUpdate,
     isValidAssetPriceDate,
     getLocalDateString,
     addDaysToDateString,
@@ -65,5 +66,21 @@ describe('formatAssetPriceForDisplay', () => {
         expect(formatAssetPriceForDisplay(0.0001)).toBe('0.0001');
         expect(formatAssetPriceForDisplay(2.5)).toBe('2.5');
         expect(formatAssetPriceForDisplay(null)).toBe('-');
+    });
+});
+
+describe('shouldRequestAssetPriceUpdate', () => {
+    const base = { offlineMode: false, enabledByUser: true, force: false, lastUpdateUnixTime: 0, nowUnixTime: 10000 };
+
+    test('behaves like the normal auto update when online', () => {
+        expect(shouldRequestAssetPriceUpdate(base)).toBe(true);
+        expect(shouldRequestAssetPriceUpdate({ ...base, lastUpdateUnixTime: 9000 })).toBe(false);
+        expect(shouldRequestAssetPriceUpdate({ ...base, enabledByUser: false })).toBe(false);
+        expect(shouldRequestAssetPriceUpdate({ ...base, enabledByUser: false, force: true })).toBe(true);
+    });
+
+    test('never requests anything in offline mode, even when forced', () => {
+        expect(shouldRequestAssetPriceUpdate({ ...base, offlineMode: true })).toBe(false);
+        expect(shouldRequestAssetPriceUpdate({ ...base, offlineMode: true, force: true })).toBe(false);
     });
 });

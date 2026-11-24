@@ -81,6 +81,13 @@ func NewUpdater(httpClient *http.Client) *Updater {
 func (u *Updater) Update(c core.Context, config *settings.Config, uid int64, defaultCurrency string) *models.AssetPriceAutoUpdateResponse {
 	response := &models.AssetPriceAutoUpdateResponse{Enabled: config.EnableAssetPricesAutoUpdate, UpdatedAsset: []string{}}
 
+	if config.OfflineMode {
+		// offline mode: no request is made, manual prices and the stored history still work
+		response.Enabled = false
+		response.Offline = true
+		return response
+	}
+
 	if !config.EnableAssetPricesAutoUpdate || u.httpClient == nil {
 		response.Enabled = false
 		return response

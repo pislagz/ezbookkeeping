@@ -99,13 +99,30 @@ func (e *ExchangeRatesDataProviderContainer) GetLatestExchangeRates(c core.Conte
 		return nil, errs.ErrInvalidExchangeRatesDataSource
 	}
 
-	response, err := e.current.GetLatestExchangeRates(c, uid, currentConfig)
+	provider := e.selectProvider(c, uid, currentConfig)
+
+	response, err := provider.GetLatestExchangeRates(c, uid, currentConfig)
 
 	if err != nil || response == nil || uid <= 0 {
 		return response, err
 	}
 
 	return e.appendAssetExchangeRates(c, uid, response), nil
+}
+
+// selectProvider returns the configured provider, or in offline mode a provider which only reads the local database
+func (e *ExchangeRatesDataProviderContainer) selectProvider(c core.Context, uid int64, currentConfig *settings.Config) ExchangeRatesDataProvider {
+	if currentConfig == nil || !currentConfig.OfflineMode {
+		return e.current
+	}
+
+	// offline mode: never contact an online data source, use the rates the user entered manually (local database only)
+	if _, isLocal := e.current.(*UserCustomExchangeRatesDataProvider); isLocal {
+		return e.current
+	}
+
+	log.Debugf(c, "[exchange_rates_data_provider_container.selectProvider] offline mode is enabled, use the local exchange rates instead of the online data source for user \"uid:%d\"", uid)
+	return newUserCustomExchangeRatesDataProvider()
 }
 
 // appendAssetExchangeRates adds the rates of assets (precious metals and crypto currencies) to the exchange rates response of any data source.

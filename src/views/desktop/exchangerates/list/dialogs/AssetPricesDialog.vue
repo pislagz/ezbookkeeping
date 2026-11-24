@@ -9,7 +9,8 @@
                     <div class="text-body-medium text-medium-emphasis mb-3">
                         {{ tt('format.misc.assetPricesHint', { currency: defaultCurrency }) }}
                     </div>
-                    <div class="mb-3">
+                    <v-alert type="info" variant="tonal" class="mb-3" v-if="offlineMode">{{ tt('Offline mode is on: prices are not fetched from the internet. Enter them manually.') }}</v-alert>
+                    <div class="mb-3" v-else>
                         <v-btn color="default" variant="outlined" :loading="fetching" :disabled="loading || fetching"
                                @click="fetchNow">{{ tt('Fetch Prices Now') }}</v-btn>
                     </div>
@@ -132,6 +133,7 @@ const {
     validate,
     savePrice,
     removePrice,
+    offlineMode,
     fetchNow: fetchPricesNow,
     getSourceDisplayName,
     formatPrice,

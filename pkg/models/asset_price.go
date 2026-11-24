@@ -92,6 +92,7 @@ type AssetPriceAutoUpdateResponse struct {
 	Enabled      bool     `json:"enabled"`
 	UpdatedAsset []string `json:"updatedAssets"`
 	SavedCount   int      `json:"savedCount"`
+	Offline      bool     `json:"offline"`
 }
 
 // ParseAssetPrice converts a decimal price string (default currency per unit) to the stored int64, rounding half up at the 10th decimal

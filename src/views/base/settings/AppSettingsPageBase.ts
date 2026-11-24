@@ -16,6 +16,7 @@ import { DateRangeScene, DateRange } from '@/core/datetime.ts';
 import type { LocalizedTimezoneInfo } from '@/core/timezone.ts';
 
 import { isObjectEmpty } from '@/lib/common.ts';
+import { isOfflineMode } from '@/lib/server_settings.ts';
 import { getCurrentUnixTime } from '@/lib/datetime.ts';
 import { getIncludedAccountsDisplayContent } from '@/lib/account.ts';
 import { getIncludedTransactionCategoriesDisplayContent } from '@/lib/category.ts';
@@ -101,6 +102,8 @@ export function useAppSettingPageBase() {
         get: () => settingsStore.appSettings.autoUpdateExchangeRatesData,
         set: (value) => settingsStore.setAutoUpdateExchangeRatesData(value)
     });
+
+    const offlineMode = isOfflineMode();
 
     const isAutoUpdateAssetPricesData = computed<boolean>({
         get: () => settingsStore.appSettings.autoUpdateAssetPricesData,
@@ -271,6 +274,7 @@ export function useAppSettingPageBase() {
         hasAnyTransactionCategory,
         hasAnyTransactionTag,
         isAutoUpdateExchangeRatesData,
+        offlineMode,
         isAutoUpdateAssetPricesData,
         transactionPictureQuality,
         isAlwaysRequireConfirmationOfClipboardContentBeforeSubmission,

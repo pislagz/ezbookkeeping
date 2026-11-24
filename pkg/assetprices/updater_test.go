@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/mayswind/ezbookkeeping/pkg/core"
+	"github.com/mayswind/ezbookkeeping/pkg/settings"
 )
 
 type testClock struct{ now time.Time }
@@ -122,4 +123,43 @@ func TestNeedsGoldBackfill(t *testing.T) {
 	assert.True(t, NeedsGoldBackfill("2026-11-01", now))
 	assert.False(t, NeedsGoldBackfill("2026-11-10", now))
 	assert.False(t, NeedsGoldBackfill("2026-11-23", now))
+}
+
+// failingTransport fails the test when any request is made
+type failingTransport struct {
+	t     *testing.T
+	calls atomic.Int32
+}
+
+func (f *failingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	f.calls.Add(1)
+	f.t.Errorf("unexpected outbound request in offline mode: %s", req.URL)
+	return nil, assert.AnError
+}
+
+func TestUpdate_OfflineModeMakesNoRequest(t *testing.T) {
+	transport := &failingTransport{t: t}
+	u := NewUpdater(&http.Client{Transport: transport})
+	c := core.NewNullContext()
+
+	// the config check comes first: no database access and no network access
+	response := u.Update(c, &settings.Config{OfflineMode: true, EnableAssetPricesAutoUpdate: true}, 1, "PLN")
+
+	assert.NotNil(t, response)
+	assert.False(t, response.Enabled)
+	assert.True(t, response.Offline)
+	assert.Empty(t, response.UpdatedAsset)
+	assert.Equal(t, 0, response.SavedCount)
+	assert.Equal(t, int32(0), transport.calls.Load())
+}
+
+func TestGetSeries_OfflineClientIsNeverUsedWhenUpdateIsShortCircuited(t *testing.T) {
+	transport := &failingTransport{t: t}
+	u := NewUpdater(&http.Client{Transport: transport})
+
+	for _, uid := range []int64{1, 2} {
+		u.Update(core.NewNullContext(), &settings.Config{OfflineMode: true}, uid, "USD")
+	}
+
+	assert.Equal(t, int32(0), transport.calls.Load())
 }

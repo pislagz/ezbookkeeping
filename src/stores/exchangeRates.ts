@@ -21,7 +21,8 @@ import {
 } from '@/lib/datetime.ts';
 import { getExchangedAmountByRate } from '@/lib/numeral.ts';
 import { isAssetCurrency } from '@/lib/asset.ts';
-import { shouldAutoUpdateAssetPrices } from '@/lib/asset_price.ts';
+import { shouldRequestAssetPriceUpdate } from '@/lib/asset_price.ts';
+import { isOfflineMode } from '@/lib/server_settings.ts';
 
 import logger from '@/lib/logger.ts';
 import services from '@/lib/services.ts';
@@ -175,6 +176,10 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
     }
 
     function autoUpdateExchangeRatesData(): void {
+        if (isOfflineMode()) {
+            return;
+        }
+
         if (settingsStore.appSettings.autoUpdateExchangeRatesData) {
             getLatestExchangeRates({ silent: true, force: false });
         }
@@ -187,16 +192,14 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
     function autoUpdateAssetPrices({ force }: { force: boolean }): Promise<AssetPriceAutoUpdateResponse | undefined> {
         const now = getCurrentUnixTime();
 
-        if (!force) {
-            if (!settingsStore.appSettings.autoUpdateAssetPricesData) {
-                return Promise.resolve(undefined);
-            }
-
-            const lastTime = Number(localStorage.getItem(assetPricesAutoUpdateTimeLocalStorageKey) || 0);
-
-            if (!shouldAutoUpdateAssetPrices(lastTime, now)) {
-                return Promise.resolve(undefined);
-            }
+        if (!shouldRequestAssetPriceUpdate({
+            offlineMode: isOfflineMode(),
+            enabledByUser: !!settingsStore.appSettings.autoUpdateAssetPricesData,
+            force,
+            lastUpdateUnixTime: Number(localStorage.getItem(assetPricesAutoUpdateTimeLocalStorageKey) || 0),
+            nowUnixTime: now
+        })) {
+            return Promise.resolve(undefined);
         }
 
         localStorage.setItem(assetPricesAutoUpdateTimeLocalStorageKey, now.toString());

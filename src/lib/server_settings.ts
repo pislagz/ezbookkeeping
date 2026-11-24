@@ -150,6 +150,11 @@ export function getExchangeRatesRequestTimeout(): number {
     return getServerSetting('errt') as number;
 }
 
+// The server runs in offline mode ([network] offline_mode, see docs/OFFLINE.md): nothing is fetched from the internet
+export function isOfflineMode(): boolean {
+    return getServerSetting('off') === 1;
+}
+
 export function isLanguagePreviewEnabled(): boolean {
     return getServerSetting('dlp') === 1;
 }

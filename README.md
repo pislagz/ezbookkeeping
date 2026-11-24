@@ -16,6 +16,44 @@ ezBookkeeping offers tailored interfaces for mobile and desktop devices. With PW
 
 Live Demo: [https://ezbookkeeping-demo.mayswind.net](https://ezbookkeeping-demo.mayswind.net)
 
+## Fork features (pislagz/ezbookkeeping)
+This fork adds tracking of precious metals and crypto assets, mainly for a self-hosted setup that is used from a phone browser (PWA). Everything exists in the desktop and the mobile UI, in English and Polish.
+
+- **Precious metals**: gold (XAU) and silver (XAG) accounts. The quantity is stored in grams and can be viewed and entered in **grams or troy ounces** (1 oz = 31.1034768 g, preference "Unit of Precious Metals").
+- **Crypto assets**: accounts in BTC, ETH, SOL, USDT, USDC, XRP, ADA, DOGE, DOT, LTC, BNB, AVAX, LINK, XMR, TRX with exact amounts (8 decimals for BTC: `0.00123456` round-trips).
+- **Dated price history** in the default currency (e.g. PLN): one price per asset and day, `auto` or `manual`; a manual price always wins. Holdings are valued with the latest price in the totals of the overview and accounts pages.
+- **Optional auto-update when the app is opened** (nothing runs in the background, at most once per hour, user toggle, can be disabled in `conf/ezbookkeeping.ini`): gold from NBP (`api.nbp.pl`, PLN per gram, backfill of up to 1 year), crypto from CoinGecko (a fixed top-250 list, so the request never reveals which coins you hold). Silver is manual only. No API keys, no user data is ever sent.
+- **Per-asset price charts** with markers for every dated buy/sell transaction.
+- **Date-unknown transactions**: the acquisition date is optional; such transactions count in balances and valuation but get no chart marker.
+- **Privacy / offline mode**: `[network] offline_mode = true` (env `EBK_NETWORK_OFFLINE_MODE=true`) switches off all outbound fetching (exchange rates, asset prices, map, gravatar). See [docs/OFFLINE.md](docs/OFFLINE.md) for the full inventory of outbound requests and how to verify it; the design of assets, prices and charts is in [docs/ASSETS.md](docs/ASSETS.md).
+
+### Build and run the Docker image from this fork
+The image is built from the repository root with the unchanged upstream `Dockerfile` (stage 1 builds the Go backend, stage 2 the Vue frontend, stage 3 is a small Alpine image that runs as user/group `1000:1000`):
+
+    $ git clone https://github.com/pislagz/ezbookkeeping && cd ezbookkeeping
+    $ docker build -t ezbookkeeping-fork .
+
+    $ docker run -d --name ezbookkeeping -p 8080:8080 \
+        -v ezb-data:/ezbookkeeping/data -v ezb-storage:/ezbookkeeping/storage \
+        -e EBK_NETWORK_OFFLINE_MODE=true \
+        ezbookkeeping-fork
+
+Then open `http://<host>:8080`. Notes:
+
+- Container paths: database (SQLite) `/ezbookkeeping/data/ezbookkeeping.db`, uploaded files `/ezbookkeeping/storage`, log `/ezbookkeeping/log` (also written to the console, see `docker logs ezbookkeeping`), config `/ezbookkeeping/conf/ezbookkeeping.ini`, port `8080`. Put the data and storage volumes on persistent storage, otherwise the data is lost with the container.
+- The process runs as uid/gid **1000**. Named volumes get the right owner automatically; with a bind mount (`-v /srv/ezb/data:/ezbookkeeping/data`) run `chown -R 1000:1000 /srv/ezb` first.
+- Every setting of `conf/ezbookkeeping.ini` can be set with an environment variable `EBK_<SECTION>_<KEY>` (upper case), for example:
+
+      -e EBK_SECURITY_SECRET_KEY=<long random string>   # change it before the first run, it is used for signing
+      -e EBK_SERVER_DOMAIN=ezb.home.lan -e EBK_SERVER_ROOT_URL=http://ezb.home.lan:8080/
+      -e EBK_NETWORK_OFFLINE_MODE=true                  # no outbound requests at all
+      -e EBK_ASSET_PRICES_ENABLE_AUTO_UPDATE=false      # or only switch off the metal/crypto price fetching
+      -e EBK_EXCHANGE_RATES_DATA_SOURCE=user_custom     # exchange rates entered by hand
+      -e TZ=Europe/Warsaw
+
+  The default currency is a per-user setting in the app (Settings → user profile), it is not a server setting. To use a full config file instead: mount it and pass `-e EBK_CONF_PATH=/ezbookkeeping/conf/my.ini`.
+- Build memory: the frontend stage (`vue-tsc` + Vite) needs about 3-4 GB of RAM. On small machines pass a larger Node heap, e.g. `docker build --build-arg BUILD_NODE_OPTIONS=--max-old-space-size=4096 -t ezbookkeeping-fork .` (and add swap if the build is killed). The backend stage downloads the Go modules and runs the Go unit tests; add `--build-arg SKIP_TESTS=<regex>` only if a test needs something your build machine does not have. The build needs internet access (npm and Go modules), the running container does not.
+
 ## Features
 - **Open Source & Self-Hosted**
     - Built for privacy and control
