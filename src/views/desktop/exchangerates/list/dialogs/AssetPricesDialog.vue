@@ -20,7 +20,7 @@
                             <th class="text-right">{{ tt('Price') }}</th>
                             <th>{{ tt('Date') }}</th>
                             <th>{{ tt('Source') }}</th>
-                            <th style="width: 120px"></th>
+                            <th style="width: 220px"></th>
                         </tr>
                         </thead>
                         <tbody>
@@ -40,6 +40,8 @@
                             <td>
                                 <v-btn density="comfortable" variant="text" color="primary"
                                        :disabled="loading" @click="selectAsset(item)">{{ tt('History') }}</v-btn>
+                                <v-btn density="comfortable" variant="text" color="primary"
+                                       :disabled="loading" @click="openChart(item)">{{ tt('Price Chart') }}</v-btn>
                             </td>
                         </tr>
                         </tbody>
@@ -112,6 +114,10 @@ import { useAssetPricesPageBase, type AssetPriceItem, type AssetPriceHistoryItem
 type ConfirmDialogType = InstanceType<typeof ConfirmDialog>;
 
 const ASSET_PRICE_MAX_VALUE = 999999999;
+
+const emit = defineEmits<{
+    (e: 'chart', asset: string): void;
+}>();
 
 const { tt } = useI18n();
 const desktopPageStore = useDesktopPageStore();
@@ -222,6 +228,11 @@ function fetchNow(): void {
         fetching.value = false;
         handleError(error);
     });
+}
+
+function openChart(item: AssetPriceItem): void {
+    showState.value = false;
+    emit('chart', item.code);
 }
 
 function close(): void {

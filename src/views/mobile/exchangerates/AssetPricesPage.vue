@@ -4,6 +4,8 @@
             <f7-nav-left :back-link="tt('Back')"></f7-nav-left>
             <f7-nav-title :title="tt('Asset Prices')"></f7-nav-title>
             <f7-nav-right>
+                <f7-link icon-f7="chart_bar_alt_fill" :aria-label="tt('Price Charts')"
+                         @click="openChart()"></f7-link>
                 <f7-link icon-f7="arrow_clockwise" :class="{ 'disabled': fetching || loading }"
                          :aria-label="tt('Fetch Prices Now')"
                          @click="fetchNow"></f7-link>
@@ -81,6 +83,10 @@ function reload(done?: () => void): void {
 
 function openHistory(item: AssetPriceItem): void {
     props.f7router.navigate(`/exchange_rates/assets/history?asset=${encodeURIComponent(item.code)}`);
+}
+
+function openChart(code?: string): void {
+    props.f7router.navigate(code ? `/exchange_rates/assets/chart?asset=${encodeURIComponent(code)}` : '/exchange_rates/assets/chart');
 }
 
 function fetchNow(): void {

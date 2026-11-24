@@ -3102,5 +3102,15 @@
     "Unable to retrieve asset prices": "Nie można pobrać cen aktywów",
     "Unable to save asset price": "Nie można zapisać ceny",
     "Unable to delete asset price": "Nie można usunąć ceny",
-    "Unable to update asset prices": "Nie można zaktualizować cen aktywów"
+    "Unable to update asset prices": "Nie można zaktualizować cen aktywów",
+    "Price Chart": "Wykres ceny",
+    "Price Charts": "Wykresy cen",
+    "Buy": "Kupno",
+    "Sell": "Sprzedaż",
+    "No assets with accounts or prices yet.": "Brak aktywów z kontami lub cenami. Najpierw utwórz konto w metalu szlachetnym lub kryptowalucie.",
+    "No prices yet for this asset.": "Brak cen tego aktywa. Dodaj cenę ręcznie w Cenach aktywów lub włącz automatyczną aktualizację cen.",
+    "Auto-update of asset prices is turned off.": "Automatyczna aktualizacja cen aktywów jest wyłączona, więc nowe ceny nie są pobierane. Włącz ją w Ustawieniach lub dodaj ceny ręcznie.",
+    "No dated transactions for this asset.": "To aktywo nie ma transakcji ze znaną datą, więc na wykresie nie ma znaczników.",
+    "Price chart markers hint": "▲ kupno, ▼ sprzedaż (tylko transakcje ze znaną datą). * cena wynikająca z przelewu.",
+    "Unable to load the price chart": "Nie można wczytać wykresu ceny"
 }
