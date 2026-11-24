@@ -35,11 +35,9 @@ func (s *AssetPricesService) GetLatestPrices(c core.Context, uid int64) (map[str
 	}
 
 	result := make(map[string]*models.AssetPrice)
-	sess := s.UserDataDB(uid).NewSession(c)
-
 	for _, asset := range core.AllAssets {
 		var prices []*models.AssetPrice
-		err := sess.Where("uid=? AND asset=?", uid, asset.Code).OrderBy("date desc").Limit(1).Find(&prices)
+		err := s.UserDataDB(uid).NewSession(c).Where("uid=? AND asset=?", uid, asset.Code).OrderBy("date desc").Limit(1).Find(&prices)
 
 		if err != nil {
 			return nil, err
