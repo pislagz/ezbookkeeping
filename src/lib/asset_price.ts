@@ -11,6 +11,19 @@ export function shouldAutoUpdateAssetPrices(lastUpdateUnixTime: number | null | 
     return nowUnixTime - lastUpdateUnixTime >= ASSET_PRICE_AUTO_UPDATE_INTERVAL_SECONDS;
 }
 
+// Decides whether the client asks the server to fetch asset prices. Never in offline mode, not even when forced.
+export function shouldRequestAssetPriceUpdate(options: { offlineMode: boolean, enabledByUser: boolean, force: boolean, lastUpdateUnixTime: number | null | undefined, nowUnixTime: number }): boolean {
+    if (options.offlineMode) {
+        return false;
+    }
+
+    if (options.force) {
+        return true;
+    }
+
+    return options.enabledByUser && shouldAutoUpdateAssetPrices(options.lastUpdateUnixTime, options.nowUnixTime);
+}
+
 export function isValidAssetPriceDate(date: string): boolean {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         return false;

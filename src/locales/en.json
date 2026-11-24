@@ -3089,6 +3089,8 @@
     "Asset": "Asset",
     "Price": "Price",
     "Auto-update Asset Prices": "Auto-update Asset Prices",
+    "Offline mode is on: prices are not fetched from the internet. Enter them manually.": "Offline mode is on: prices are not fetched from the internet. Enter them manually.",
+    "Offline mode is on: nothing is fetched from the internet.": "Offline mode is on: nothing is fetched from the internet.",
     "Fetch Prices Now": "Fetch Prices Now",
     "Source": "Source",
     "Manual": "Manual",

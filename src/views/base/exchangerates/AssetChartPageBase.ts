@@ -9,6 +9,7 @@ import { useAssetPricesStore } from '@/stores/assetPrices.ts';
 
 import { ALL_ASSETS } from '@/consts/currency.ts';
 
+import { isOfflineMode } from '@/lib/server_settings.ts';
 import services from '@/lib/services.ts';
 import { getLocalDateString, parseAssetPriceString } from '@/lib/asset_price.ts';
 import {
@@ -65,7 +66,7 @@ export function useAssetChartPageBase() {
 
     const defaultCurrency = computed<string>(() => userStore.currentUserDefaultCurrency);
     const metalUnit = computed<string>(() => settingsStore.appSettings.metalDisplayUnit);
-    const autoUpdateEnabled = computed<boolean>(() => !!settingsStore.appSettings.autoUpdateAssetPricesData);
+    const autoUpdateEnabled = computed<boolean>(() => !isOfflineMode() && !!settingsStore.appSettings.autoUpdateAssetPricesData);
     const unitName = computed<string>(() => selectedAsset.value ? getDisplayUnitName(selectedAsset.value, metalUnit.value) : '');
 
     const allMarkers = computed<AssetChartMarker[]>(() => {

@@ -41,7 +41,7 @@
                     {{ tt('Auto-update Exchange Rates Data') }}
                 </template>
                 <template #after>
-                    <f7-toggle :checked="isAutoUpdateExchangeRatesData" @toggle:change="isAutoUpdateExchangeRatesData = $event"></f7-toggle>
+                    <f7-toggle :disabled="offlineMode" :checked="isAutoUpdateExchangeRatesData" @toggle:change="isAutoUpdateExchangeRatesData = $event"></f7-toggle>
                 </template>
             </f7-list-item>
             <f7-list-item>
@@ -49,10 +49,13 @@
                     {{ tt('Auto-update Asset Prices') }}
                 </template>
                 <template #after>
-                    <f7-toggle :checked="isAutoUpdateAssetPricesData" @toggle:change="isAutoUpdateAssetPricesData = $event"></f7-toggle>
+                    <f7-toggle :disabled="offlineMode" :checked="isAutoUpdateAssetPricesData" @toggle:change="isAutoUpdateAssetPricesData = $event"></f7-toggle>
                 </template>
             </f7-list-item>
         </f7-list>
+        <f7-block class="margin-vertical-half text-color-orange" v-if="offlineMode">
+            {{ tt('Offline mode is on: nothing is fetched from the internet.') }}
+        </f7-block>
 
         <f7-block-title>{{ tt('Overview Page') }}</f7-block-title>
         <f7-list strong inset dividers class="settings-list">
@@ -579,6 +582,7 @@ const {
     allImageUploadQualityTypes,
     allReconciliationStatementDateRanges,
     isAutoUpdateExchangeRatesData,
+    offlineMode,
     isAutoUpdateAssetPricesData,
     showAccountBalance,
     showAmountInHomePage,

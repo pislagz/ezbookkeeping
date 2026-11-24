@@ -6,12 +6,15 @@
             <f7-nav-right>
                 <f7-link icon-f7="chart_bar_alt_fill" :aria-label="tt('Price Charts')"
                          @click="openChart()"></f7-link>
-                <f7-link icon-f7="arrow_clockwise" :class="{ 'disabled': fetching || loading }"
+                <f7-link icon-f7="arrow_clockwise" v-if="!offlineMode" :class="{ 'disabled': fetching || loading }"
                          :aria-label="tt('Fetch Prices Now')"
                          @click="fetchNow"></f7-link>
             </f7-nav-right>
         </f7-navbar>
 
+        <f7-block class="margin-vertical-half text-color-orange" v-if="offlineMode">
+            {{ tt('Offline mode is on: prices are not fetched from the internet. Enter them manually.') }}
+        </f7-block>
         <f7-block class="margin-vertical-half text-color-gray">
             {{ tt('format.misc.assetPricesHint', { currency: defaultCurrency }) }}
         </f7-block>
@@ -59,6 +62,7 @@ const { showToast } = useI18nUIComponents();
 
 const {
     loading,
+    offlineMode,
     defaultCurrency,
     assetPrices,
     loadAssetPrices,

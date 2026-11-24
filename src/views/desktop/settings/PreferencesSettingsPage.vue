@@ -66,14 +66,15 @@
                         <div class="setting-item">
                             <span>{{ tt('Auto-update Exchange Rates Data') }}</span>
                             <v-spacer/>
-                            <v-switch class="ms-4" v-model="isAutoUpdateExchangeRatesData"/>
+                            <v-switch class="ms-4" :disabled="offlineMode" v-model="isAutoUpdateExchangeRatesData"/>
                         </div>
 
                         <div class="setting-item">
                             <span>{{ tt('Auto-update Asset Prices') }}</span>
                             <v-spacer/>
-                            <v-switch class="ms-4" v-model="isAutoUpdateAssetPricesData"/>
+                            <v-switch class="ms-4" :disabled="offlineMode" v-model="isAutoUpdateAssetPricesData"/>
                         </div>
+                        <div class="text-body-small text-medium-emphasis" v-if="offlineMode">{{ tt('Offline mode is on: nothing is fetched from the internet.') }}</div>
                     </v-card-text>
                 </v-form>
             </v-card>
@@ -529,6 +530,7 @@ const {
     hasAnyTransactionTag,
     timeZone,
     isAutoUpdateExchangeRatesData,
+    offlineMode,
     isAutoUpdateAssetPricesData,
     showAccountBalance,
     showAmountInHomePage,
