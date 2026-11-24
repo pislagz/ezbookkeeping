@@ -511,6 +511,9 @@ type Config struct {
 	ExchangeRatesProxy                            string
 	ExchangeRatesSkipTLSVerify                    bool
 
+	// Asset Prices
+	EnableAssetPricesAutoUpdate bool
+
 	// Developer Tools
 	EnableLanguagePreview bool
 }
@@ -659,6 +662,8 @@ func LoadConfiguration(configFilePath string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	config.EnableAssetPricesAutoUpdate = getConfigItemBoolValue(cfgFile, "asset_prices", "enable_auto_update", true)
 
 	err = loadExchangeRatesConfiguration(config, cfgFile, "exchange_rates")
 
