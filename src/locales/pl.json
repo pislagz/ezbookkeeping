@@ -3087,5 +3087,20 @@
     "Date unknown": "Data nieznana",
     "Asset Prices": "Ceny aktywów",
     "Asset": "Aktywo",
-    "Price": "Cena"
+    "Price": "Cena",
+    "Auto-update Asset Prices": "Automatyczna aktualizacja cen aktywów",
+    "Fetch Prices Now": "Pobierz ceny teraz",
+    "Source": "Źródło",
+    "Manual": "Ręcznie",
+    "Automatic": "Automatycznie",
+    "History": "Historia",
+    "Price History": "Historia cen",
+    "A manual price replaces the automatic price of the same date.": "Cena wpisana ręcznie zastępuje cenę automatyczną z tego samego dnia.",
+    "Are you sure you want to delete this price?": "Czy na pewno chcesz usunąć tę cenę?",
+    "Date is invalid": "Nieprawidłowa data",
+    "Price is invalid": "Nieprawidłowa cena",
+    "Unable to retrieve asset prices": "Nie można pobrać cen aktywów",
+    "Unable to save asset price": "Nie można zapisać ceny",
+    "Unable to delete asset price": "Nie można usunąć ceny",
+    "Unable to update asset prices": "Nie można zaktualizować cen aktywów"
 }

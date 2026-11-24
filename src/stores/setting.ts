@@ -169,6 +169,12 @@ export const useSettingsStore = defineStore('settings', () => {
         updateUserApplicationCloudSettingValue('autoUpdateExchangeRatesData', value);
     }
 
+    function setAutoUpdateAssetPricesData(value: boolean): void {
+        updateApplicationSettingsValue('autoUpdateAssetPricesData', value);
+        appSettings.value.autoUpdateAssetPricesData = value;
+        updateUserApplicationCloudSettingValue('autoUpdateAssetPricesData', value);
+    }
+
     function setShowAccountBalance(value: boolean): void {
         updateApplicationSettingsValue('showAccountBalance', value);
         appSettings.value.showAccountBalance = value;
@@ -657,6 +663,7 @@ export const useSettingsStore = defineStore('settings', () => {
         setFontSize,
         setTimeZone,
         setAutoUpdateExchangeRatesData,
+        setAutoUpdateAssetPricesData,
         setShowAccountBalance,
         setAccountCategoryOrders,
         setChartColors,

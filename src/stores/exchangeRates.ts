@@ -6,6 +6,7 @@ import { useSettingsStore } from './setting.ts';
 import { type BeforeResolveFunction, itemAndIndex } from '@/core/base.ts';
 import type { BigDecimal } from '@/core/numeral.ts';
 
+import type { AssetPriceAutoUpdateResponse } from '@/models/asset_price.ts';
 import type {
     UserCustomExchangeRateUpdateResponse,
     LatestExchangeRate,
@@ -20,12 +21,14 @@ import {
 } from '@/lib/datetime.ts';
 import { getExchangedAmountByRate } from '@/lib/numeral.ts';
 import { isAssetCurrency } from '@/lib/asset.ts';
+import { shouldAutoUpdateAssetPrices } from '@/lib/asset_price.ts';
 
 import logger from '@/lib/logger.ts';
 import services from '@/lib/services.ts';
 
 const exchangeRatesLocalStorageKey = 'ebk_app_exchange_rates';
 const userDataSourceType = 'user_custom';
+const assetPricesAutoUpdateTimeLocalStorageKey = 'ebk_app_asset_prices_auto_update_time';
 
 interface LatestExchangeRates {
     readonly time?: number;
@@ -175,6 +178,48 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
         if (settingsStore.appSettings.autoUpdateExchangeRatesData) {
             getLatestExchangeRates({ silent: true, force: false });
         }
+
+        autoUpdateAssetPrices({ force: false }).catch(() => {});
+    }
+
+    // Asks the server to fetch the public prices of gold and crypto assets which the user holds (the server fetches at most once per hour,
+    // can be disabled in the config). Nothing is sent to external services by the browser, and no user data is sent by the server.
+    function autoUpdateAssetPrices({ force }: { force: boolean }): Promise<AssetPriceAutoUpdateResponse | undefined> {
+        const now = getCurrentUnixTime();
+
+        if (!force) {
+            if (!settingsStore.appSettings.autoUpdateAssetPricesData) {
+                return Promise.resolve(undefined);
+            }
+
+            const lastTime = Number(localStorage.getItem(assetPricesAutoUpdateTimeLocalStorageKey) || 0);
+
+            if (!shouldAutoUpdateAssetPrices(lastTime, now)) {
+                return Promise.resolve(undefined);
+            }
+        }
+
+        localStorage.setItem(assetPricesAutoUpdateTimeLocalStorageKey, now.toString());
+
+        return new Promise((resolve, reject) => {
+            services.autoUpdateAssetPrices().then(response => {
+                const data = response.data;
+
+                if (!data || !data.success || !data.result) {
+                    reject({ message: 'Unable to update asset prices' });
+                    return;
+                }
+
+                if (data.result.savedCount > 0) {
+                    reloadExchangeRatesAfterAssetPriceChanged().then(() => resolve(data.result)).catch(() => resolve(data.result));
+                } else {
+                    resolve(data.result);
+                }
+            }).catch(error => {
+                logger.error('failed to update asset prices', error);
+                reject({ message: 'Unable to update asset prices' });
+            });
+        });
     }
 
     function getLatestExchangeRates({ silent, force }: { silent: boolean, force: boolean }): Promise<LatestExchangeRateResponse> {
@@ -376,6 +421,8 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
         removeExpiredExchangeRates,
         resetLatestExchangeRates,
         autoUpdateExchangeRatesData,
+        autoUpdateAssetPrices,
+        reloadExchangeRatesAfterAssetPriceChanged,
         getLatestExchangeRates,
         updateUserCustomExchangeRate,
         deleteUserCustomExchangeRate,

@@ -3087,5 +3087,20 @@
     "Date unknown": "Date unknown",
     "Asset Prices": "Asset Prices",
     "Asset": "Asset",
-    "Price": "Price"
+    "Price": "Price",
+    "Auto-update Asset Prices": "Auto-update Asset Prices",
+    "Fetch Prices Now": "Fetch Prices Now",
+    "Source": "Source",
+    "Manual": "Manual",
+    "Automatic": "Automatic",
+    "History": "History",
+    "Price History": "Price History",
+    "A manual price replaces the automatic price of the same date.": "A manual price replaces the automatic price of the same date.",
+    "Are you sure you want to delete this price?": "Are you sure you want to delete this price?",
+    "Date is invalid": "Date is invalid",
+    "Price is invalid": "Price is invalid",
+    "Unable to retrieve asset prices": "Unable to retrieve asset prices",
+    "Unable to save asset price": "Unable to save asset price",
+    "Unable to delete asset price": "Unable to delete asset price",
+    "Unable to update asset prices": "Unable to update asset prices"
 }

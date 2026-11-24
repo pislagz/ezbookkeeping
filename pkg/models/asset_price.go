@@ -81,9 +81,10 @@ type AssetPriceInfoResponse struct {
 
 // AssetPriceSeriesItem represents a point of the price series of an asset
 type AssetPriceSeriesItem struct {
-	Date   string `json:"date"`
-	Price  string `json:"price"`
-	Source string `json:"source"`
+	Date       string `json:"date"`
+	Price      string `json:"price"`
+	Source     string `json:"source"`
+	SourceName string `json:"sourceName"`
 }
 
 // AssetPriceAutoUpdateResponse represents the result of an automatic update of asset prices
@@ -157,9 +158,10 @@ func (p *AssetPrice) ToAssetPriceInfoResponse() *AssetPriceInfoResponse {
 // ToAssetPriceSeriesItem returns a series item according to database model
 func (p *AssetPrice) ToAssetPriceSeriesItem() *AssetPriceSeriesItem {
 	return &AssetPriceSeriesItem{
-		Date:   p.Date,
-		Price:  FormatAssetPrice(p.Price),
-		Source: p.Source,
+		Date:       p.Date,
+		Price:      FormatAssetPrice(p.Price),
+		Source:     p.Source,
+		SourceName: p.SourceName,
 	}
 }
 

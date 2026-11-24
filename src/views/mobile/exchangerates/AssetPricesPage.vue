@@ -1,12 +1,12 @@
 <template>
-    <f7-page ptr @ptr:refresh="reloadPrices">
+    <f7-page ptr @ptr:refresh="reload" @page:afterin="reload()">
         <f7-navbar>
-            <f7-nav-left :class="{ 'disabled': submitting }" :back-link="tt('Back')"></f7-nav-left>
+            <f7-nav-left :back-link="tt('Back')"></f7-nav-left>
             <f7-nav-title :title="tt('Asset Prices')"></f7-nav-title>
             <f7-nav-right>
-                <f7-link icon-f7="checkmark_alt" :class="{ 'disabled': submitting || loading }"
-                         :aria-label="tt('Save')"
-                         @click="confirm"></f7-link>
+                <f7-link icon-f7="arrow_clockwise" :class="{ 'disabled': fetching || loading }"
+                         :aria-label="tt('Fetch Prices Now')"
+                         @click="fetchNow"></f7-link>
             </f7-nav-right>
         </f7-navbar>
 
@@ -16,20 +16,24 @@
 
         <template :key="group.kind" v-for="group in groupedPrices">
             <f7-block-title>{{ group.name }}</f7-block-title>
-            <f7-list form strong inset dividers class="margin-vertical-half">
-                <template #list>
-                    <list-number-input
-                        :key="item.code"
-                        :disabled="submitting"
-                        :label="`${item.name} (${item.code}) - ${defaultCurrency} / ${item.unitName}`"
-                        :placeholder="`${defaultCurrency} / ${item.unitName}`"
-                        :min-value="0"
-                        :max-value="ASSET_PRICE_MAX_VALUE"
-                        :max-decimal-count="4"
-                        v-model="item.price"
-                        v-for="item in group.items"
-                    ></list-number-input>
-                </template>
+            <f7-list strong inset dividers class="margin-vertical-half">
+                <f7-list-item
+                    link="#"
+                    :key="item.code"
+                    :title="`${item.name} (${item.code})`"
+                    :footer="item.date ? `${item.date} · ${getSourceDisplayName(item.source, item.sourceName)}` : ''"
+                    @click="openHistory(item)"
+                    v-for="item in group.items"
+                >
+                    <template #after>
+                        <div class="text-align-right">
+                            <div>{{ formatPrice(item.price) }} {{ defaultCurrency }} / {{ item.unitName }}</div>
+                            <div class="text-color-gray" style="font-size: var(--ebk-small-font-size, 12px)" v-if="item.kind === 'metal' && item.price">
+                                {{ formatOuncePrice(item.price) }} {{ defaultCurrency }} / oz
+                            </div>
+                        </div>
+                    </template>
+                </f7-list-item>
             </f7-list>
         </template>
     </f7-page>
@@ -40,11 +44,9 @@ import { ref, computed } from 'vue';
 import type { Router } from 'framework7/types';
 
 import { useI18n } from '@/locales/helpers.ts';
-import { useI18nUIComponents, showLoading, hideLoading } from '@/lib/ui/mobile.ts';
+import { useI18nUIComponents } from '@/lib/ui/mobile.ts';
 
 import { useAssetPricesPageBase, type AssetPriceItem } from '@/views/base/exchangerates/AssetPricesPageBase.ts';
-
-const ASSET_PRICE_MAX_VALUE = 999999999;
 
 const props = defineProps<{
     f7router: Router.Router;
@@ -57,13 +59,14 @@ const {
     loading,
     defaultCurrency,
     assetPrices,
-    reload,
     loadAssetPrices,
-    savePrice
+    fetchNow: fetchPricesNow,
+    getSourceDisplayName,
+    formatPrice,
+    formatOuncePrice
 } = useAssetPricesPageBase();
 
-const submitting = ref<boolean>(false);
-const originalPrices = ref<Record<string, number>>({});
+const fetching = ref<boolean>(false);
 
 const groupedPrices = computed<{ kind: string, name: string, items: AssetPriceItem[] }[]>(() => {
     return [
@@ -72,47 +75,22 @@ const groupedPrices = computed<{ kind: string, name: string, items: AssetPriceIt
     ];
 });
 
-function rememberOriginalPrices(): void {
-    const prices: Record<string, number> = {};
-
-    for (const item of assetPrices.value) {
-        prices[item.code] = item.price;
-    }
-
-    originalPrices.value = prices;
+function reload(done?: () => void): void {
+    loadAssetPrices().then(() => done?.());
 }
 
-function reloadPrices(done?: () => void): void {
-    reload().then(() => {
-        rememberOriginalPrices();
-        done?.();
-    });
+function openHistory(item: AssetPriceItem): void {
+    props.f7router.navigate(`/exchange_rates/assets/history?asset=${encodeURIComponent(item.code)}`);
 }
 
-function confirm(): void {
-    const router = props.f7router;
-    const changedItems = assetPrices.value.filter(item => (item.price || 0) !== (originalPrices.value[item.code] || 0));
+function fetchNow(): void {
+    fetching.value = true;
 
-    if (changedItems.length < 1) {
-        router.back();
-        return;
-    }
-
-    submitting.value = true;
-    showLoading(() => submitting.value);
-
-    // save prices one by one, the server keeps all asset prices of the user in one table
-    changedItems.reduce((promise, item) => promise.then(() => savePrice(item)), Promise.resolve<unknown>(undefined)).then(() => {
-        submitting.value = false;
-        hideLoading();
-
-        showToast('You have updated exchange rate');
-        router.back();
+    fetchPricesNow().then(() => {
+        fetching.value = false;
+        reload();
     }).catch(error => {
-        submitting.value = false;
-        hideLoading();
-        loadAssetPrices();
-        rememberOriginalPrices();
+        fetching.value = false;
 
         if (!error.processed) {
             showToast(error.message || error);
@@ -120,7 +98,4 @@ function confirm(): void {
     });
 }
 
-loadAssetPrices();
-rememberOriginalPrices();
-reloadPrices();
 </script>
