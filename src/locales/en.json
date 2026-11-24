@@ -3102,5 +3102,15 @@
     "Unable to retrieve asset prices": "Unable to retrieve asset prices",
     "Unable to save asset price": "Unable to save asset price",
     "Unable to delete asset price": "Unable to delete asset price",
-    "Unable to update asset prices": "Unable to update asset prices"
+    "Unable to update asset prices": "Unable to update asset prices",
+    "Price Chart": "Price Chart",
+    "Price Charts": "Price Charts",
+    "Buy": "Buy",
+    "Sell": "Sell",
+    "No assets with accounts or prices yet.": "No assets with accounts or prices yet. Create an account in a metal or crypto currency first.",
+    "No prices yet for this asset.": "There are no prices for this asset yet. Add a manual price in Asset Prices or turn on the auto-update of asset prices.",
+    "Auto-update of asset prices is turned off.": "Auto-update of asset prices is turned off, so no new prices are fetched. Turn it on in Settings or add prices manually.",
+    "No dated transactions for this asset.": "This asset has no transactions with a known date, so the chart shows no markers.",
+    "Price chart markers hint": "▲ purchase, ▼ sale (dated transactions only). * price implied by the transfer.",
+    "Unable to load the price chart": "Unable to load the price chart"
 }

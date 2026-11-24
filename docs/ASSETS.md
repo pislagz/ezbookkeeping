@@ -76,11 +76,40 @@ Same mechanism as the exchange rate auto update, nothing runs in the background 
 
 Frontend: store `src/stores/assetPrices.ts` (`loadAssetPriceSeries` is what chart code should call), UI desktop `AssetPricesDialog.vue` (latest prices, "History" → add/edit/delete a price of a date), mobile `AssetPricesPage.vue` + `AssetPriceHistoryPage.vue` (route `/exchange_rates/assets/history?asset=XAU`). Metal prices are shown per gram and per troy ounce.
 
-### Hooks for PR #3 (charts) – #4
+### Hooks for PR #4
 
 * Price line: `GET /asset_prices/series.json`.
 * The asset registry already contains `CoinGeckoId` (Go) / `coinGeckoId` (TS).
 * Chart markers: transactions with `timeUnknown=true` must be excluded (see below).
+
+## Charts (PR #3)
+
+A price chart per asset: the price history line plus buy/sell markers of the dated transactions. Everything is computed from local data, **no outbound request** is made by the chart.
+
+**Where:** desktop: Exchange Rates page → "Price Charts" (dialog with asset select + range buttons), or "Price Chart" on a row of the "Asset Prices" dialog. Mobile: Asset Prices page (chart icon in the navbar) and the price history page of an asset (chart icon), route `/exchange_rates/assets/chart?asset=XAU`. The asset list contains the assets the user has an account in (hidden accounts count) or that have a price.
+
+**Data used**
+
+* Prices: `GET /asset_prices/series.json?asset=…` (whole history, once per asset; ranges are cut in the browser). Price per gram / per coin in the default currency; metals are shown **per gram or per troy ounce** following the `metalDisplayUnit` preference (`price × 31.1034768` for oz).
+* Transactions: the existing `GET /transactions/list.json` filtered by `account_ids` (all accounts whose currency is the asset), paginated with `nextTimeSequenceId` (50 per page) until the end. No new backend endpoint was needed (the list API already returns one row per transfer, with both accounts and both amounts).
+* Ranges: 1M (30 days) / 3M / 6M / 1Y (365 days) / All (from the first price or the first marker). Logic: `src/lib/asset_chart.ts` (pure, unit tested), data loading `src/views/base/exchangerates/AssetChartPageBase.ts`, chart `src/components/common/AssetPriceChart.vue` (echarts, used by desktop and mobile; light/dark follows the theme).
+
+**Marker rules**
+
+| Transaction | Marker |
+|---|---|
+| Income into an account of the asset | buy (▲) |
+| Expense from an account of the asset | sell (▼) |
+| Transfer from another currency (e.g. PLN) into an account of the asset | buy; its value is the transferred amount if the other side is in the default currency |
+| Transfer from an account of the asset into another currency | sell (same value rule) |
+| Transfer between two accounts of the same asset | **no marker** (the holding does not change) |
+| Opening balance / "modify balance" | **no marker**: its date is the account creation or an arbitrary correction date, not an acquisition date (it still counts in balances) |
+| `timeUnknown = true` ("Date unknown") | **no marker** (counts in balances/valuation) |
+
+* The marker date is the calendar date of the transaction in the timezone it was entered in (its stored UTC offset), so it matches the plain `YYYY-MM-DD` dates of the prices.
+* Position: the price of that date, or the nearest earlier price if the day has none (weekends). If there is no price on or before the date, the price implied by a transfer with a default-currency account is used (tooltip marks it with `*`); otherwise the transaction gets no marker. With no price at all there is no chart.
+* Tooltip (touch friendly: it follows the nearest price point, markers near that point are listed under it): date, price, and per marker buy/sell, amount in the asset unit (`1.00 oz`, `31.10 g`, `0.00123456 BTC`), value in the default currency (transfer amount, else amount × price), price and account name.
+* Empty states: no prices (hint to add a manual price or enable the auto update; an extra line if the auto update setting is off), prices but no dated transactions, no asset with an account/price, load error.
 
 ## Optional acquisition date ("Date unknown")
 

@@ -4,6 +4,9 @@
             <f7-nav-left :class="{ 'disabled': submitting }" :back-link="tt('Back')"></f7-nav-left>
             <f7-nav-title :title="`${assetName} (${assetCode})`"></f7-nav-title>
             <f7-nav-right>
+                <f7-link icon-f7="chart_bar_alt_fill" :class="{ 'disabled': submitting }"
+                         :aria-label="tt('Price Chart')"
+                         @click="f7router.navigate(`/exchange_rates/assets/chart?asset=${encodeURIComponent(assetCode)}`)"></f7-link>
                 <f7-link icon-f7="checkmark_alt" :class="{ 'disabled': submitting || loading }"
                          :aria-label="tt('Save')"
                          @click="save"></f7-link>
