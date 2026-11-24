@@ -67,6 +67,7 @@ export class ImportTransaction implements ImportTransactionResponse {
             sourceAmount: this.sourceAmount,
             destinationAmount: this.type === TransactionType.Transfer ? this.destinationAmount : 0,
             hideAmount: false,
+            timeUnknown: false,
             tagIds: this.tagIds,
             pictureIds: [],
             comment: this.comment,

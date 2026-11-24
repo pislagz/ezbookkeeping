@@ -670,7 +670,24 @@
             "ZAR": "Rand południowoafrykański",
             "ZMW": "Kwacha zambijska",
             "ZWG": "Złoto Zimbabwe",
-            "ZWL": "Dolar zimbabwe (2009)"
+            "ZWL": "Dolar zimbabwe (2009)",
+            "XAU": "Złoto",
+            "XAG": "Srebro",
+            "BTC": "Bitcoin",
+            "ETH": "Ethereum",
+            "SOL": "Solana",
+            "USDT": "Tether",
+            "USDC": "USD Coin",
+            "XRP": "XRP",
+            "ADA": "Cardano",
+            "DOGE": "Dogecoin",
+            "DOT": "Polkadot",
+            "LTC": "Litecoin",
+            "BNB": "BNB",
+            "AVAX": "Avalanche",
+            "LINK": "Chainlink",
+            "XMR": "Monero",
+            "TRX": "TRON"
         },
         "unit": {
             "Afghani": {
@@ -3060,5 +3077,11 @@
     "Parameter Invalid": "Nieprawidłowy parametr",
     "Numeric Overflow": "Przepełnienie liczbowe",
     "Invalid date range": "Nieprawidłowy zakres dat",
-    "Click to close": "Kliknij, aby zamknąć"
+    "Click to close": "Kliknij, aby zamknąć",
+    "Metals": "Metale szlachetne",
+    "Crypto": "Kryptowaluty",
+    "Unit of Precious Metals": "Jednostka metali szlachetnych",
+    "Grams (g)": "Gramy (g)",
+    "Troy ounces (oz)": "Uncje trojańskie (oz)",
+    "Date unknown": "Data nieznana"
 }

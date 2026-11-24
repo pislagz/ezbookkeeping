@@ -27,6 +27,7 @@ export class Transaction implements TransactionInfoResponse {
     public sourceAmount: number;
     public destinationAmount: number;
     public hideAmount: boolean;
+    public timeUnknown: boolean = false; // the acquisition date is not known, the time is only used for ordering
     public tagIds: string[];
     public comment: string;
     public editable: boolean;
@@ -241,6 +242,7 @@ export class Transaction implements TransactionInfoResponse {
             sourceAmount: this.sourceAmount,
             destinationAmount: this.type === TransactionType.Transfer ? this.destinationAmount : 0,
             hideAmount: this.hideAmount,
+            timeUnknown: this.timeUnknown,
             tagIds: this.tagIds,
             pictureIds: this.getPictureIds(),
             comment: this.comment,
@@ -267,6 +269,7 @@ export class Transaction implements TransactionInfoResponse {
             sourceAmount: this.sourceAmount,
             destinationAmount: this.type === TransactionType.Transfer ? this.destinationAmount : 0,
             hideAmount: this.hideAmount,
+            timeUnknown: this.timeUnknown,
             tagIds: this.tagIds,
             pictureIds: this.getPictureIds(),
             comment: this.comment,
@@ -333,6 +336,8 @@ export class Transaction implements TransactionInfoResponse {
             transactionResponse.comment,
             transactionResponse.editable
         );
+
+        transaction.timeUnknown = !!transactionResponse.timeUnknown;
 
         if (transactionResponse.category) {
             transaction.setCategory(TransactionCategory.of(transactionResponse.category));
@@ -540,6 +545,7 @@ export interface TransactionCreateRequest {
     readonly sourceAmount: number;
     readonly destinationAmount: number;
     readonly hideAmount: boolean;
+    readonly timeUnknown: boolean;
     readonly tagIds: string[];
     readonly pictureIds: string[];
     readonly comment: string;
@@ -558,6 +564,7 @@ export interface TransactionModifyRequest {
     readonly sourceAmount: number;
     readonly destinationAmount: number;
     readonly hideAmount: boolean;
+    readonly timeUnknown: boolean;
     readonly tagIds: string[];
     readonly pictureIds: string[];
     readonly comment: string;
@@ -678,6 +685,7 @@ export interface TransactionInfoResponse {
     readonly sourceAmount: number;
     readonly destinationAmount: number;
     readonly hideAmount: boolean;
+    readonly timeUnknown?: boolean;
     readonly tagIds: string[];
     readonly tags?: TransactionTagInfoResponse[];
     readonly pictures?: TransactionPictureInfoBasicResponse[];

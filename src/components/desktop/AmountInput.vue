@@ -81,12 +81,11 @@ import { useDesktopPageStore } from '@/stores/desktopPage.ts';
 
 import { NumeralSystem, DecimalSeparator } from '@/core/numeral.ts';
 import type { CurrencyPrependAndAppendText } from '@/core/currency.ts';
-import { DEFAULT_DECIMAL_NUMBER_COUNT, AMOUNT_FACTOR } from '@/consts/numeral.ts';
+import { AMOUNT_FACTOR } from '@/consts/numeral.ts';
 import { TRANSACTION_MIN_AMOUNT, TRANSACTION_MAX_AMOUNT } from '@/consts/transaction.ts';
 
 import { isNumber, replaceAll } from '@/lib/common.ts';
 import { parseBigDecimal } from '@/lib/numeral.ts';
-import { evaluateExpressionToAmount } from '@/lib/evaluator.ts';
 import type { ComponentDensity, InputVariant } from '@/lib/ui/desktop.ts';
 import logger from '@/lib/logger.ts';
 
@@ -118,6 +117,8 @@ const {
     tt,
     getCurrentNumeralSystemType,
     getCurrentDecimalSeparator,
+    getAmountInputDecimalCount,
+    evaluateAmountFormula,
     parseAmountFromLocalizedNumerals,
     formatAmountToLocalizedNumeralsWithoutDigitGrouping,
     getAmountPrependAndAppendText
@@ -127,9 +128,14 @@ const {
     currentValue,
     onKeyUpDown,
     onPaste
-} = useCommonNumberInputBase(props, emit, DEFAULT_DECIMAL_NUMBER_COUNT, getInitedFormattedValue(props.modelValue, props.flipNegative), parseAmountFromLocalizedNumerals, getFormattedValue, getValidFormattedValue);
+} = useCommonNumberInputBase(props, emit, () => getAmountInputDecimalCount(props.currency), getInitedFormattedValue(props.modelValue, props.flipNegative), parseAmount, getFormattedValue, getValidFormattedValue);
 
 const desktopPageStore = useDesktopPageStore();
+
+// parse the textual amount to the stored integer amount of the currency (considering the scale of assets and the preferred unit of metals)
+function parseAmount(value: string): number {
+    return parseAmountFromLocalizedNumerals(value, props.currency);
+}
 
 const rules = [
     (v: string) => {
@@ -138,7 +144,7 @@ const rules = [
         }
 
         try {
-            const val = parseAmountFromLocalizedNumerals(v);
+            const val = parseAmount(v);
 
             if (Number.isNaN(val) || !Number.isFinite(val)) {
                 return tt('Amount value is not number');
@@ -223,7 +229,7 @@ function calculateFormula(): void {
     finalFormula = numeralSystem.value.replaceLocalizedDigitsToWesternArabicDigits(finalFormula);
 
     try {
-        const calculatedAmount: number | undefined = evaluateExpressionToAmount(finalFormula)?.toSafeIntegerNumber();
+        const calculatedAmount: number | undefined = evaluateAmountFormula(finalFormula, props.currency);
 
         if (isNumber(calculatedAmount)) {
             const textualValue = getFormattedValue(calculatedAmount);
@@ -289,15 +295,15 @@ function getInitedFormattedValue(value: number, flipNegative?: boolean): string 
 
 function getFormattedValue(value: number): string {
     if (!Number.isNaN(value) && Number.isFinite(value)) {
-        return formatAmountToLocalizedNumeralsWithoutDigitGrouping(parseBigDecimal(value), props.currency);
+        return formatAmountToLocalizedNumeralsWithoutDigitGrouping(parseBigDecimal(value), props.currency, true);
     }
 
     return numeralSystem.value.digitZero;
 }
 
 function getDisplayCurrencyPrependAndAppendText(): CurrencyPrependAndAppendText | null {
-    const numericCurrentValue = parseAmountFromLocalizedNumerals(currentValue.value);
-    const isPlural = numericCurrentValue !== AMOUNT_FACTOR && numericCurrentValue !== -AMOUNT_FACTOR;
+    const numericCurrentValue = parseAmount(currentValue.value);
+    const isPlural = numericCurrentValue !== AMOUNT_FACTOR && numericCurrentValue !== -AMOUNT_FACTOR; // only used by normal currencies, the unit of assets does not have plural form
 
     return getAmountPrependAndAppendText(props.currency, isPlural);
 }
@@ -323,7 +329,7 @@ watch(() => props.modelValue, (newValue) => {
         newValue = -newValue;
     }
 
-    const numericCurrentValue = parseAmountFromLocalizedNumerals(currentValue.value);
+    const numericCurrentValue = parseAmount(currentValue.value);
 
     if (newValue !== numericCurrentValue) {
         const newStringValue = getFormattedValue(newValue);
@@ -367,7 +373,7 @@ watch(currentValue, (newValue) => {
     if (finalValue !== newValue) {
         currentValue.value = finalValue;
     } else {
-        let value: number = parseAmountFromLocalizedNumerals(finalValue);
+        let value: number = parseAmount(finalValue);
 
         if (Number.isNaN(value) || !Number.isFinite(value)) {
             value = 0;

@@ -1,9 +1,15 @@
 import { CurrencyDisplaySymbol, CurrencyDisplayLocation, type CurrencyPrependAndAppendText, CurrencyDisplayType } from '@/core/currency.ts';
-import { ALL_CURRENCIES, DEFAULT_CURRENCY_SYMBOL } from '@/consts/currency.ts';
+import { ALL_CURRENCIES, ALL_ASSETS_BY_CODE, DEFAULT_CURRENCY_SYMBOL } from '@/consts/currency.ts';
 
 export function getCurrencyFraction(currencyCode?: string): number | undefined {
     if (!currencyCode) {
         return undefined;
+    }
+
+    const asset = ALL_ASSETS_BY_CODE[currencyCode];
+
+    if (asset) {
+        return asset.displayDecimals;
     }
 
     const currencyInfo = ALL_CURRENCIES[currencyCode];

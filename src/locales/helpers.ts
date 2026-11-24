@@ -201,9 +201,9 @@ import {
 import type { LocaleDefaultSettings } from '@/core/setting.ts';
 import type { ErrorResponse } from '@/core/api.ts';
 
-import { AMOUNT_FACTOR, DISPLAY_HIDDEN_AMOUNT, INCOMPLETE_AMOUNT_SUFFIX } from '@/consts/numeral.ts';
+import { DISPLAY_HIDDEN_AMOUNT, INCOMPLETE_AMOUNT_SUFFIX } from '@/consts/numeral.ts';
 import { UTC_TIMEZONE, ALL_TIMEZONES } from '@/consts/timezone.ts';
-import { ALL_CURRENCIES, ACCOUNT_CURRENCY_NOT_SET_VALUE } from '@/consts/currency.ts';
+import { ALL_CURRENCIES, ALL_ASSETS, ACCOUNT_CURRENCY_NOT_SET_VALUE } from '@/consts/currency.ts';
 import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES, DEFAULT_TRANSFER_CATEGORIES } from '@/consts/category.ts';
 import { PARSE_TRANSACTION_API_URL_PATH, KnownErrorCode, SPECIFIED_API_NOT_FOUND_ERRORS, PARAMETERIZED_ERRORS, SUPPORTED_PARSE_TRANSACTION_RECORD_ID_TYPES } from '@/consts/api.ts';
 import { OAUTH2_PROVIDER_DISPLAY_NAME } from '@/consts/oauth2.ts';
@@ -276,11 +276,22 @@ import {
     getAdaptiveDisplayAmountRate
 } from '@/lib/numeral.ts';
 
+import { evaluateExpressionToAmount } from '@/lib/evaluator.ts';
+
 import {
-    getCurrencyFraction,
     appendCurrencySymbol,
     getAmountPrependAndAppendCurrencySymbol
 } from '@/lib/currency.ts';
+
+import {
+    isAssetCurrency,
+    isMetalCurrency,
+    getCurrencyStorageScale,
+    getAmountViewSpec,
+    getAmountUnitLabel,
+    storedAmountToViewAmount,
+    viewAmountToStoredAmount
+} from '@/lib/asset.ts';
 
 import {
     formatCoordinate
@@ -966,11 +977,12 @@ export function useI18n() {
         };
     }
 
-    function getNumberFormatOptions({numeralSystem, digitGrouping, decimalSeparator, currencyCode}: {
+    function getNumberFormatOptions({numeralSystem, digitGrouping, decimalSeparator, currencyCode, forInput}: {
         numeralSystem?: NumeralSystem,
         digitGrouping?: DigitGroupingType,
         decimalSeparator?: string,
-        currencyCode?: string
+        currencyCode?: string,
+        forInput?: boolean
     }): NumberFormatOptions {
         if (!isDefined(numeralSystem)) {
             numeralSystem = getCurrentNumeralSystemType();
@@ -984,12 +996,15 @@ export function useI18n() {
             decimalSeparator = getCurrentDecimalSeparator();
         }
 
+        const amountViewSpec = getAmountViewSpec(currencyCode, settingsStore.appSettings.metalDisplayUnit, forInput);
+
         return {
             numeralSystem: numeralSystem,
             digitGrouping: digitGrouping,
             digitGroupingSymbol: getCurrentDigitGroupingSymbol(),
             decimalSeparator: decimalSeparator,
-            decimalNumberCount: getCurrencyFraction(currencyCode),
+            decimalNumberCount: amountViewSpec.minDecimals,
+            amountScale: amountViewSpec.scale
         };
     }
 
@@ -1245,7 +1260,8 @@ export function useI18n() {
         }];
     }
 
-    function getAllCurrencies(withNotSet?: boolean): LocalizedCurrencyInfo[] {
+    // withAssets: also include precious metals and crypto assets (only for account currency), they are listed after normal currencies and labelled with the group name
+    function getAllCurrencies(withNotSet?: boolean, withAssets?: boolean): LocalizedCurrencyInfo[] {
         const allCurrencies: LocalizedCurrencyInfo[] = [];
 
         for (const currencyCode of keys(ALL_CURRENCIES)) {
@@ -1260,6 +1276,28 @@ export function useI18n() {
         allCurrencies.sort(function (c1, c2) {
             return c1.displayName.localeCompare(c2.displayName);
         })
+
+        if (withAssets) {
+            for (const kind of ['metal', 'crypto'] as const) {
+                const groupName = kind === 'metal' ? t('Metals') : t('Crypto');
+                const groupItems: LocalizedCurrencyInfo[] = [];
+
+                for (const asset of ALL_ASSETS) {
+                    if (asset.kind === kind) {
+                        groupItems.push({
+                            currencyCode: asset.code,
+                            displayName: `${getCurrencyName(asset.code)} (${groupName})`
+                        });
+                    }
+                }
+
+                groupItems.sort(function (c1, c2) {
+                    return c1.displayName.localeCompare(c2.displayName);
+                });
+
+                allCurrencies.push(...groupItems);
+            }
+        }
 
         if (withNotSet) {
             allCurrencies.splice(0, 0, {
@@ -2407,14 +2445,65 @@ export function useI18n() {
         return undefined;
     }
 
-    function getParsedAmountNumber(value: string, numeralSystem?: NumeralSystem): number {
-        const numberFormatOptions = getNumberFormatOptions({ numeralSystem });
-        return parseAmount(value, numberFormatOptions);
+    // Parses a textual amount to the stored integer amount of the currency.
+    // For normal currencies this is amount * 100, for assets it uses the scale of the asset (and the preferred unit for metals).
+    function getParsedAmountNumber(value: string, numeralSystem?: NumeralSystem, currencyCode?: string): number {
+        const numberFormatOptions = getNumberFormatOptions({ numeralSystem, currencyCode, forInput: true });
+        const viewAmount = parseAmount(value, numberFormatOptions);
+
+        if (!currencyCode) {
+            return viewAmount;
+        }
+
+        const spec = getAmountViewSpec(currencyCode, settingsStore.appSettings.metalDisplayUnit, true);
+        return viewAmountToStoredAmount(viewAmount, spec, currencyCode);
     }
 
-    function getFormattedAmount(value: BigDecimal, numeralSystem?: NumeralSystem, digitGrouping?: DigitGroupingType, currencyCode?: string): string {
-        const numberFormatOptions = getNumberFormatOptions({ numeralSystem, digitGrouping, currencyCode });
-        return formatAmount(value, numberFormatOptions);
+    // Converts the stored amount to the amount of the view (e.g. grams to troy ounces if the user prefers ounces for metals)
+    function getViewAmount(value: BigDecimal, currencyCode?: string, forInput?: boolean): BigDecimal {
+        if (!currencyCode || !isMetalCurrency(currencyCode)) {
+            return value;
+        }
+
+        const spec = getAmountViewSpec(currencyCode, settingsStore.appSettings.metalDisplayUnit, forInput);
+
+        if (spec.unit !== 'oz') {
+            return value;
+        }
+
+        return parseBigDecimal(storedAmountToViewAmount(value.toDoubleNumber(), spec, currencyCode));
+    }
+
+    function getFormattedAmount(value: BigDecimal, numeralSystem?: NumeralSystem, digitGrouping?: DigitGroupingType, currencyCode?: string, forInput?: boolean): string {
+        const numberFormatOptions = getNumberFormatOptions({ numeralSystem, digitGrouping, currencyCode, forInput });
+        return formatAmount(getViewAmount(value, currencyCode, forInput), numberFormatOptions);
+    }
+
+    // The max count of decimals which can be entered in an amount input of the currency
+    function getAmountInputDecimalCount(currencyCode?: string): number {
+        return getAmountViewSpec(currencyCode, settingsStore.appSettings.metalDisplayUnit, true).scale;
+    }
+
+    // Evaluates a formula in an amount input of the currency to the stored integer amount
+    function evaluateAmountFormula(formula: string, currencyCode?: string): number | undefined {
+        const spec = getAmountViewSpec(currencyCode, settingsStore.appSettings.metalDisplayUnit, true);
+        const viewAmount = evaluateExpressionToAmount(formula, spec.scale)?.toSafeIntegerNumber();
+
+        if (!isNumber(viewAmount)) {
+            return undefined;
+        }
+
+        return viewAmountToStoredAmount(viewAmount, spec, currencyCode);
+    }
+
+    function appendAssetUnitLabel(textualValue: string, currencyCode: string, currencyDisplayType: CurrencyDisplayType): string {
+        const label = getAmountUnitLabel(currencyCode, settingsStore.appSettings.metalDisplayUnit);
+
+        if (!label || currencyDisplayType === CurrencyDisplayType.None) {
+            return textualValue;
+        }
+
+        return `${textualValue} ${label}`;
     }
 
     function getFormattedAmountWithCurrency(value: BigDecimal | HiddenAmount | BigDecimalWithSuffix, currencyCode?: string | false, currencyDisplayType?: CurrencyDisplayType, numeralSystem?: NumeralSystem, decimalSeparator?: string): string {
@@ -2447,11 +2536,17 @@ export function useI18n() {
         const currencyName = getCurrencyName(finalCurrencyCode);
 
         if (isBigDecimal(value)) {
-            const isPlural: boolean = value.notEquals(AMOUNT_FACTOR) && value.notEquals(-AMOUNT_FACTOR);
-            const textualValue = formatAmount(value, numberFormatOptions);
+            const oneUnitAmount = 10 ** getCurrencyStorageScale(finalCurrencyCode);
+            const isPlural: boolean = value.notEquals(oneUnitAmount) && value.notEquals(-oneUnitAmount);
+            const textualValue = formatAmount(getViewAmount(value, finalCurrencyCode), numberFormatOptions);
 
             if (!finalCurrencyCode) {
                 return textualValue;
+            }
+
+            if (isAssetCurrency(finalCurrencyCode)) {
+                const assetText = appendAssetUnitLabel(textualValue, finalCurrencyCode, currencyDisplayType);
+                return suffix ? assetText + suffix : assetText;
             }
 
             const currencyUnit = getCurrencyUnitName(finalCurrencyCode, isPlural);
@@ -2468,6 +2563,10 @@ export function useI18n() {
 
             if (!finalCurrencyCode) {
                 return textualValue;
+            }
+
+            if (isAssetCurrency(finalCurrencyCode)) {
+                return appendAssetUnitLabel(textualValue, finalCurrencyCode, currencyDisplayType);
             }
 
             const currencyUnit = getCurrencyUnitName(finalCurrencyCode, isPlural);
@@ -2539,6 +2638,15 @@ export function useI18n() {
 
     function getAmountPrependAndAppendText(currencyCode: string, isPlural: boolean): CurrencyPrependAndAppendText | null {
         const currencyDisplayType = getCurrentCurrencyDisplayType();
+
+        if (isAssetCurrency(currencyCode)) {
+            if (currencyDisplayType === CurrencyDisplayType.None) {
+                return null;
+            }
+
+            return { appendText: getAmountUnitLabel(currencyCode, settingsStore.appSettings.metalDisplayUnit) };
+        }
+
         const currencyUnit = getCurrencyUnitName(currencyCode, isPlural);
         const currencyName = getCurrencyName(currencyCode);
         return getAmountPrependAndAppendCurrencySymbol(currencyDisplayType, currencyCode, currencyUnit, currencyName, isPlural);
@@ -3173,12 +3281,14 @@ function parse(row, index) {
         getCalendarAlternateDates,
         getCalendarAlternateDate,
         // format amount/number functions
-        parseAmountFromLocalizedNumerals: (value: string) => getParsedAmountNumber(value),
-        parseAmountFromWesternArabicNumerals: (value: string) => getParsedAmountNumber(value, NumeralSystem.WesternArabicNumerals),
+        getAmountInputDecimalCount,
+        evaluateAmountFormula,
+        parseAmountFromLocalizedNumerals: (value: string, currencyCode?: string) => getParsedAmountNumber(value, undefined, currencyCode),
+        parseAmountFromWesternArabicNumerals: (value: string, currencyCode?: string) => getParsedAmountNumber(value, NumeralSystem.WesternArabicNumerals, currencyCode),
         formatAmountToLocalizedNumerals: (value: BigDecimal, currencyCode?: string) => getFormattedAmount(value, undefined, undefined, currencyCode),
         formatAmountToWesternArabicNumerals: (value: BigDecimal, currencyCode?: string) => getFormattedAmount(value, NumeralSystem.WesternArabicNumerals, undefined, currencyCode),
-        formatAmountToLocalizedNumeralsWithoutDigitGrouping: (value: BigDecimal, currencyCode?: string) => getFormattedAmount(value, undefined, DigitGroupingType.None, currencyCode),
-        formatAmountToWesternArabicNumeralsWithoutDigitGrouping: (value: BigDecimal, currencyCode?: string) => getFormattedAmount(value, NumeralSystem.WesternArabicNumerals, DigitGroupingType.None, currencyCode),
+        formatAmountToLocalizedNumeralsWithoutDigitGrouping: (value: BigDecimal, currencyCode?: string, forInput?: boolean) => getFormattedAmount(value, undefined, DigitGroupingType.None, currencyCode, forInput),
+        formatAmountToWesternArabicNumeralsWithoutDigitGrouping: (value: BigDecimal, currencyCode?: string, forInput?: boolean) => getFormattedAmount(value, NumeralSystem.WesternArabicNumerals, DigitGroupingType.None, currencyCode, forInput),
         formatAmountToLocalizedNumeralsWithCurrency: (value: BigDecimal | HiddenAmount | BigDecimalWithSuffix, currencyCode?: string | false, currencyDisplayType?: CurrencyDisplayType) => getFormattedAmountWithCurrency(value, currencyCode, currencyDisplayType),
         formatAmountToWesternArabicNumeralsWithCurrency: (value: BigDecimal | HiddenAmount | BigDecimalWithSuffix, currencyCode?: string | false, currencyDisplayType?: CurrencyDisplayType) => getFormattedAmountWithCurrency(value, currencyCode, currencyDisplayType, NumeralSystem.WesternArabicNumerals),
         formatBigDecimalToLocalizedNumerals: (value: BigDecimal, precision?: number) => getFormattedBigDecimal(value, undefined, undefined, precision),

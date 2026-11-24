@@ -24,7 +24,7 @@ export type ParseNumberFunction = (value: string) => number;
 export type FormatNumberFunction = (value: number) => string;
 export type GetValidFormattedValueFunction = (value: number, textualValue: string, hasDecimalSeparator: boolean) => string;
 
-export function useCommonNumberInputBase(props: CommonNumberInputProps, emit: CommonNumberInputEmits, maxDecimalCount: number, initValue: string, parseNumber: ParseNumberFunction, formatNumber: FormatNumberFunction, getValidFormattedValue: GetValidFormattedValueFunction) {
+export function useCommonNumberInputBase(props: CommonNumberInputProps, emit: CommonNumberInputEmits, maxDecimalCountOrGetter: number | (() => number), initValue: string, parseNumber: ParseNumberFunction, formatNumber: FormatNumberFunction, getValidFormattedValue: GetValidFormattedValueFunction) {
     const {
         getCurrentNumeralSystemType,
         getCurrentDecimalSeparator,
@@ -36,6 +36,8 @@ export function useCommonNumberInputBase(props: CommonNumberInputProps, emit: Co
     const numeralSystem = computed<NumeralSystem>(() => getCurrentNumeralSystemType());
 
     function onKeyUpDown(e: KeyboardEvent): void {
+        const maxDecimalCount = typeof maxDecimalCountOrGetter === 'function' ? maxDecimalCountOrGetter() : maxDecimalCountOrGetter;
+
         if (e.altKey || e.ctrlKey || e.metaKey || (e.key.indexOf('F') === 0 && (e.key.length === 2 || e.key.length === 3))
             || e.key === 'ArrowLeft' || e.key === 'ArrowRight'
             || e.key === 'Home' || e.key === 'End' || e.key === 'Tab'

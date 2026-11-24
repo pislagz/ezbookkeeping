@@ -1,5 +1,5 @@
 import type { BigDecimal } from '@/core/numeral.ts';
-import { AMOUNT_FACTOR } from '@/consts/numeral.ts';
+import { MAX_SUPPORTED_DECIMAL_NUMBER_COUNT } from '@/consts/numeral.ts';
 import { TRANSACTION_MIN_AMOUNT, TRANSACTION_MAX_AMOUNT } from '../consts/transaction.ts';
 
 import { replaceAll } from './common.ts';
@@ -9,9 +9,6 @@ import logger from './logger.ts';
 
 type Operator = '+' | '-' | '*' | '/';
 type OperatorAndParenthesis = Operator | '(' | ')';
-
-const minAllowedAmount: BigDecimal = parseBigDecimal(TRANSACTION_MIN_AMOUNT).divide(AMOUNT_FACTOR);
-const maxAllowedAmount: BigDecimal = parseBigDecimal(TRANSACTION_MAX_AMOUNT).divide(AMOUNT_FACTOR);
 
 const operatorPriority: Record<Operator, number> = {
     '+': 1,
@@ -196,7 +193,8 @@ function evaluatePostfixExpr(tokens: string[]): BigDecimal | null {
 
     return stack[0] as BigDecimal;
 }
-export function evaluateExpressionToAmount(expr: string): BigDecimal | undefined {
+// scale: the count of decimals of the integer amount which is returned (2 for normal currencies)
+export function evaluateExpressionToAmount(expr: string, scale: number = MAX_SUPPORTED_DECIMAL_NUMBER_COUNT): BigDecimal | undefined {
     if (!expr) {
         return undefined;
     }
@@ -213,9 +211,11 @@ export function evaluateExpressionToAmount(expr: string): BigDecimal | undefined
         return undefined;
     }
 
-    if (!result.between(minAllowedAmount, maxAllowedAmount)) {
+    const factor = 10 ** scale;
+
+    if (!result.between(parseBigDecimal(TRANSACTION_MIN_AMOUNT).divide(factor), parseBigDecimal(TRANSACTION_MAX_AMOUNT).divide(factor))) {
         throw new Error('Numeric Overflow');
     }
 
-    return result.multiply(AMOUNT_FACTOR).truncate();
+    return result.multiply(factor).truncate();
 }

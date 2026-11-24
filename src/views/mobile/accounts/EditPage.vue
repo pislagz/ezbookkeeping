@@ -752,8 +752,8 @@ const showMoreActionSheet = ref<boolean>(false);
 const showDeleteActionSheet = ref<boolean>(false);
 const showCreditCardLimitSheet = ref<boolean>(false);
 
-const allCurrencies = computed<LocalizedCurrencyInfo[]>(() => getAllCurrencies());
-const allCurrenciesWithNotSet = computed<LocalizedCurrencyInfo[]>(() => getAllCurrencies(true));
+const allCurrencies = computed<LocalizedCurrencyInfo[]>(() => getAllCurrencies(false, true));
+const allCurrenciesWithNotSet = computed<LocalizedCurrencyInfo[]>(() => getAllCurrencies(true, true));
 
 function formatAccountDisplayBalance(selectedAccount: Account): string {
     const balance = parseBigDecimal(selectedAccount.balance);

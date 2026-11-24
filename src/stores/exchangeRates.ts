@@ -324,7 +324,7 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
             return null;
         }
 
-        return getExchangedAmountByRate(amount, fromCurrencyExchangeRate.rate, toCurrencyExchangeRate.rate);
+        return getExchangedAmountByRate(amount, fromCurrencyExchangeRate.rate, toCurrencyExchangeRate.rate, fromCurrency, toCurrency);
     }
 
     return {

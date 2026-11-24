@@ -308,6 +308,12 @@ export const useSettingsStore = defineStore('settings', () => {
         updateUserApplicationCloudSettingValue('quickAddButtonActionInMobileTransactionEditPage', value);
     }
 
+    function setMetalDisplayUnit(value: string): void {
+        // device local setting, not synchronized to the cloud
+        updateApplicationSettingsValue('metalDisplayUnit', value);
+        appSettings.value.metalDisplayUnit = value;
+    }
+
     function setAutoSaveTransactionDraft(value: string): void {
         updateApplicationSettingsValue('autoSaveTransactionDraft', value);
         appSettings.value.autoSaveTransactionDraft = value;
@@ -679,6 +685,7 @@ export const useSettingsStore = defineStore('settings', () => {
         // -- Transaction Edit Page
         setQuickSaveButtonStyleInMobileTransactionListPage,
         setQuickAddButtonActionInMobileTransactionEditPage,
+        setMetalDisplayUnit,
         setAutoSaveTransactionDraft,
         setAutoGetCurrentGeoLocation,
         setShowSelectedTagsOnTopInMobile,

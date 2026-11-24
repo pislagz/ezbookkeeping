@@ -275,6 +275,12 @@
                                         :model-value="transaction.time"
                                         @update:model-value="updateTransactionTime"
                                         @error="onShowDateTimeError" />
+                                    <v-switch class="mt-1" density="compact" color="primary" hide-details
+                                              :label="tt('Date unknown')"
+                                              :readonly="mode === TransactionEditPageMode.View"
+                                              :disabled="loading || submitting || recognizing"
+                                              v-model="transaction.timeUnknown"
+                                              v-if="transaction instanceof Transaction && transaction.type !== TransactionType.ModifyBalance" />
                                 </v-col>
                                 <v-col cols="12" md="6" v-if="type === TransactionEditPageType.Template && transaction instanceof TransactionTemplate && transaction.templateType === TemplateType.Schedule.type">
                                     <schedule-frequency-select

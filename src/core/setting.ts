@@ -90,6 +90,8 @@ export interface ApplicationSettings extends BaseApplicationSetting {
     defaultCreditCardAmountDisplayTypeInMobile: number;
     reconciliationStatementButtonDefaultDateRangeTypeInDesktop: number;
     reconciliationStatementPageDefaultDateRangeTypeInMobile: number;
+    // Amount Display
+    metalDisplayUnit: string; // 'g' or 'oz', the unit of precious metals (gold, silver) amounts, stored amounts are always in grams
     // Exchange Rates Data Page
     currencySortByInExchangeRatesPage: number;
     // Browser Cache Management
@@ -267,6 +269,7 @@ export const DEFAULT_APPLICATION_SETTINGS: ApplicationSettings = {
     reconciliationStatementButtonDefaultDateRangeTypeInDesktop: DEFAULT_RECONCILIATION_STATEMENT_DATE_RANGE_IN_DESKTOP.type,
     reconciliationStatementPageDefaultDateRangeTypeInMobile: DEFAULT_RECONCILIATION_STATEMENT_DATE_RANGE_IN_MOBILE.type,
     // Exchange Rates Data Page
+    metalDisplayUnit: 'g',
     currencySortByInExchangeRatesPage: CurrencySortingType.Default.type,
     // Browser Cache Management
     mapCacheExpiration: -1,
