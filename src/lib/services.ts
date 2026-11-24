@@ -55,6 +55,15 @@ import type {
     DataStatisticsResponse
 } from '@/models/data_management.ts';
 import type {
+    AssetPriceInfo,
+    AssetPriceSeriesItem,
+    AssetPriceSeriesRequest,
+    AssetPriceSaveRequest,
+    AssetPriceDeleteRequest,
+    AssetPriceAutoUpdateResponse
+} from '@/models/asset_price.ts';
+
+import type {
     UserCustomExchangeRateUpdateRequest,
     UserCustomExchangeRateDeleteRequest,
     UserCustomExchangeRateUpdateResponse,
@@ -997,6 +1006,35 @@ export default {
     },
     deleteUserCustomExchangeRate: (req: UserCustomExchangeRateDeleteRequest): ApiResponsePromise<boolean> => {
         return axios.post<ApiResponse<boolean>>('v1/exchange_rates/user_custom/delete.json', req);
+    },
+    getLatestAssetPrices: (): ApiResponsePromise<AssetPriceInfo[]> => {
+        return axios.get<ApiResponse<AssetPriceInfo[]>>('v1/asset_prices/latest.json');
+    },
+    getAssetPriceSeries: (req: AssetPriceSeriesRequest): ApiResponsePromise<AssetPriceSeriesItem[]> => {
+        const queryParams = [`asset=${encodeURIComponent(req.asset)}`];
+
+        if (req.startDate) {
+            queryParams.push(`startDate=${encodeURIComponent(req.startDate)}`);
+        }
+
+        if (req.endDate) {
+            queryParams.push(`endDate=${encodeURIComponent(req.endDate)}`);
+        }
+
+        return axios.get<ApiResponse<AssetPriceSeriesItem[]>>('v1/asset_prices/series.json?' + queryParams.join('&'));
+    },
+    saveAssetPrice: (req: AssetPriceSaveRequest): ApiResponsePromise<AssetPriceInfo> => {
+        return axios.post<ApiResponse<AssetPriceInfo>>('v1/asset_prices/save.json', req);
+    },
+    deleteAssetPrice: (req: AssetPriceDeleteRequest): ApiResponsePromise<boolean> => {
+        return axios.post<ApiResponse<boolean>>('v1/asset_prices/delete.json', req);
+    },
+    autoUpdateAssetPrices: (): ApiResponsePromise<AssetPriceAutoUpdateResponse> => {
+        // the server fetches public prices (at most once per hour), no data of the user is sent to any external service
+        return axios.post<ApiResponse<AssetPriceAutoUpdateResponse>>('v1/asset_prices/auto_update.json', {}, {
+            ignoreError: true,
+            timeout: getExchangeRatesRequestTimeout() || DEFAULT_API_TIMEOUT
+        } as ApiRequestConfig);
     },
     getServerVersion: (): ApiResponsePromise<VersionInfo> => {
         return axios.get<ApiResponse<VersionInfo>>('v1/systems/version.json');

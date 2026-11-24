@@ -1,0 +1,5 @@
+[{"id":"bitcoin","symbol":"btc","name":"Bitcoin","current_price":400123.45,"market_cap":1},
+ {"id":"ethereum","symbol":"eth","name":"Ethereum","current_price":12000},
+ {"id":"tiny","symbol":"tiny","name":"Tiny","current_price":1.2e-7},
+ {"id":"nullprice","symbol":"n","name":"N","current_price":null},
+ {"id":"tether","symbol":"usdt","name":"Tether","current_price":0.0001}]

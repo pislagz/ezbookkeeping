@@ -44,6 +44,14 @@
                     <f7-toggle :checked="isAutoUpdateExchangeRatesData" @toggle:change="isAutoUpdateExchangeRatesData = $event"></f7-toggle>
                 </template>
             </f7-list-item>
+            <f7-list-item>
+                <template #after-title>
+                    {{ tt('Auto-update Asset Prices') }}
+                </template>
+                <template #after>
+                    <f7-toggle :checked="isAutoUpdateAssetPricesData" @toggle:change="isAutoUpdateAssetPricesData = $event"></f7-toggle>
+                </template>
+            </f7-list-item>
         </f7-list>
 
         <f7-block-title>{{ tt('Overview Page') }}</f7-block-title>
@@ -571,6 +579,7 @@ const {
     allImageUploadQualityTypes,
     allReconciliationStatementDateRanges,
     isAutoUpdateExchangeRatesData,
+    isAutoUpdateAssetPricesData,
     showAccountBalance,
     showAmountInHomePage,
     timezoneUsedForStatisticsInHomePage,

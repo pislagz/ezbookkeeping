@@ -102,6 +102,11 @@ export function useAppSettingPageBase() {
         set: (value) => settingsStore.setAutoUpdateExchangeRatesData(value)
     });
 
+    const isAutoUpdateAssetPricesData = computed<boolean>({
+        get: () => settingsStore.appSettings.autoUpdateAssetPricesData,
+        set: (value) => settingsStore.setAutoUpdateAssetPricesData(value)
+    });
+
     const showAccountBalance = computed<boolean>({
         get: () => settingsStore.appSettings.showAccountBalance,
         set: (value) => settingsStore.setShowAccountBalance(value)
@@ -266,6 +271,7 @@ export function useAppSettingPageBase() {
         hasAnyTransactionCategory,
         hasAnyTransactionTag,
         isAutoUpdateExchangeRatesData,
+        isAutoUpdateAssetPricesData,
         transactionPictureQuality,
         isAlwaysRequireConfirmationOfClipboardContentBeforeSubmission,
         isAutoUploadTransactionPictureForAIRecognition,

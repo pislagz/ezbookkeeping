@@ -517,6 +517,13 @@ func startWebServer(c *core.CliContext) error {
 			apiV1Route.POST("/exchange_rates/user_custom/update.json", bindApi(api.ExchangeRates.UserCustomExchangeRateUpdateHandler, config))
 			apiV1Route.POST("/exchange_rates/user_custom/delete.json", bindApi(api.ExchangeRates.UserCustomExchangeRateDeleteHandler, config))
 
+			// Asset Prices
+			apiV1Route.GET("/asset_prices/latest.json", bindApi(api.AssetPrices.AssetPriceLatestHandler, config))
+			apiV1Route.GET("/asset_prices/series.json", bindApi(api.AssetPrices.AssetPriceSeriesHandler, config))
+			apiV1Route.POST("/asset_prices/save.json", bindApi(api.AssetPrices.AssetPriceSaveHandler, config))
+			apiV1Route.POST("/asset_prices/delete.json", bindApi(api.AssetPrices.AssetPriceDeleteHandler, config))
+			apiV1Route.POST("/asset_prices/auto_update.json", bindApi(api.AssetPrices.AssetPriceAutoUpdateHandler, config))
+
 			// System
 			apiV1Route.GET("/systems/version.json", bindApi(api.Systems.VersionHandler, config))
 		}

@@ -68,6 +68,12 @@
                             <v-spacer/>
                             <v-switch class="ms-4" v-model="isAutoUpdateExchangeRatesData"/>
                         </div>
+
+                        <div class="setting-item">
+                            <span>{{ tt('Auto-update Asset Prices') }}</span>
+                            <v-spacer/>
+                            <v-switch class="ms-4" v-model="isAutoUpdateAssetPricesData"/>
+                        </div>
                     </v-card-text>
                 </v-form>
             </v-card>
@@ -523,6 +529,7 @@ const {
     hasAnyTransactionTag,
     timeZone,
     isAutoUpdateExchangeRatesData,
+    isAutoUpdateAssetPricesData,
     showAccountBalance,
     showAmountInHomePage,
     itemsCountInTransactionListPage,

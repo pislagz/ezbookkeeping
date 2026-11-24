@@ -110,12 +110,10 @@ func (e *ExchangeRatesDataProviderContainer) GetLatestExchangeRates(c core.Conte
 
 // appendAssetExchangeRates adds the rates of assets (precious metals and crypto currencies) to the exchange rates response of any data source.
 //
-// Assets have no rates in the data sources, so the user enters a price (in the user's default currency per one gram or one coin) which
-// is stored in the user custom exchange rate table. The price is converted to the same format as the rates of the data source
-// (units of the asset per one unit of the response base currency), so the client does not need to know where a rate comes from.
-//
-// HOOK for dated asset price history (price history table + auto-fetch): replace the call of GetAllCustomExchangeRatesByUid in
-// this function by "latest price of every asset on or before today", the rest of the function stays unchanged.
+// Assets have no rates in the data sources. The latest price (in the user's default currency per one gram or one coin) of every asset is read
+// from the asset price history (asset_price table, filled by the automatic update and the manual entries).
+// The price is converted to the same format as the rates of the data source (units of the asset per one unit of the response base currency),
+// so the client does not need to know where a rate comes from.
 func (e *ExchangeRatesDataProviderContainer) appendAssetExchangeRates(c core.Context, uid int64, response *models.LatestExchangeRateResponse) *models.LatestExchangeRateResponse {
 	user, err := services.Users.GetUserById(c, uid)
 
@@ -124,7 +122,7 @@ func (e *ExchangeRatesDataProviderContainer) appendAssetExchangeRates(c core.Con
 		return response
 	}
 
-	customRates, err := services.UserCustomExchangeRates.GetAllCustomExchangeRatesByUid(c, uid)
+	latestPrices, err := services.AssetPrices.GetLatestPrices(c, uid)
 
 	if err != nil {
 		log.Warnf(c, "[exchange_rates_data_provider_container.appendAssetExchangeRates] failed to get asset prices for user \"uid:%d\", because %s", uid, err.Error())
@@ -133,10 +131,8 @@ func (e *ExchangeRatesDataProviderContainer) appendAssetExchangeRates(c core.Con
 
 	prices := make(map[string]float64)
 
-	for _, customRate := range customRates {
-		if core.IsAsset(customRate.Currency) {
-			prices[customRate.Currency] = customRate.ToAssetPrice()
-		}
+	for asset, latestPrice := range latestPrices {
+		prices[asset] = latestPrice.ToFloat64()
 	}
 
 	if len(prices) < 1 {
