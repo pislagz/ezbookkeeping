@@ -182,7 +182,8 @@
             "ruleCount": "{count} rules",
             "accountActivationAndResendValidationEmailTip": "Account activation link has been sent to your email address: {email}, If you don't receive the mail, please fill password again and click the button below to resend the validation mail.",
             "resendValidationEmailTip": "If you don't receive the mail, please fill password again and click the button below to resend the validation mail to: {email}",
-            "oauth2bindTip": "You're signing in to the {userName} user using {providerName}. Please enter your ezBookkeeping password to verify."
+            "oauth2bindTip": "You're signing in to the {userName} user using {providerName}. Please enter your ezBookkeeping password to verify.",
+            "assetPricesHint": "Enter prices in {currency} per gram (precious metals) or per coin (crypto). They are used to value your holdings in {currency}."
         }
     },
     "dataExport": {
@@ -3083,5 +3084,8 @@
     "Unit of Precious Metals": "Unit of Precious Metals",
     "Grams (g)": "Grams (g)",
     "Troy ounces (oz)": "Troy ounces (oz)",
-    "Date unknown": "Date unknown"
+    "Date unknown": "Date unknown",
+    "Asset Prices": "Asset Prices",
+    "Asset": "Asset",
+    "Price": "Price"
 }

@@ -19,6 +19,7 @@ import {
     getCurrentUnixTime
 } from '@/lib/datetime.ts';
 import { getExchangedAmountByRate } from '@/lib/numeral.ts';
+import { isAssetCurrency } from '@/lib/asset.ts';
 
 import logger from '@/lib/logger.ts';
 import services from '@/lib/services.ts';
@@ -244,6 +245,12 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
                     return;
                 }
 
+                if (isAssetCurrency(currency)) {
+                    // for assets the server returns the price (not a rate), reload the exchange rates to get the converted rate
+                    reloadExchangeRatesAfterAssetPriceChanged().then(() => resolve(data.result)).catch(reject);
+                    return;
+                }
+
                 const exchangeRate: LatestExchangeRate = {
                     currency: data.result.currency,
                     rate: data.result.rate
@@ -278,6 +285,11 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
                     return;
                 }
 
+                if (isAssetCurrency(currency)) {
+                    reloadExchangeRatesAfterAssetPriceChanged().then(() => resolve(data.result)).catch(reject);
+                    return;
+                }
+
                 if (beforeResolve) {
                     beforeResolve(() => {
                         removeExchangeRateFromLatestExchangeRateList(currency);
@@ -299,6 +311,31 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
                 }
             });
         });
+    }
+
+    function reloadExchangeRatesAfterAssetPriceChanged(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            getLatestExchangeRates({ silent: true, force: true }).then(() => resolve()).catch(error => {
+                if (error && error.isUpToDate) {
+                    resolve();
+                } else {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    // Returns the price of one unit (one gram for metals, one coin for crypto) of the asset in the default currency
+    // The server converts the asset prices to rates of the same format as other currencies (see pkg/exchangerates/exchange_rates_data_provider_container.go)
+    function getAssetPrice(assetCode: string, defaultCurrency: string): number | undefined {
+        const assetRate = Number(latestExchangeRateMap.value[assetCode]?.rate);
+        const defaultCurrencyRate = Number(latestExchangeRateMap.value[defaultCurrency]?.rate);
+
+        if (!assetRate || !defaultCurrencyRate || !Number.isFinite(assetRate) || !Number.isFinite(defaultCurrencyRate) || assetRate <= 0) {
+            return undefined;
+        }
+
+        return defaultCurrencyRate / assetRate;
     }
 
     function getExchangedAmount(amount: BigDecimal, fromCurrency: string, toCurrency: string): BigDecimal | null {
@@ -342,6 +379,7 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
         getLatestExchangeRates,
         updateUserCustomExchangeRate,
         deleteUserCustomExchangeRate,
+        getAssetPrice,
         getExchangedAmount
     };
 });

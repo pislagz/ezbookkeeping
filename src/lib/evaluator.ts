@@ -10,6 +10,9 @@ import logger from './logger.ts';
 type Operator = '+' | '-' | '*' | '/';
 type OperatorAndParenthesis = Operator | '(' | ')';
 
+const minAllowedAmount: BigDecimal = parseBigDecimal(TRANSACTION_MIN_AMOUNT).divide(10 ** MAX_SUPPORTED_DECIMAL_NUMBER_COUNT);
+const maxAllowedAmount: BigDecimal = parseBigDecimal(TRANSACTION_MAX_AMOUNT).divide(10 ** MAX_SUPPORTED_DECIMAL_NUMBER_COUNT);
+
 const operatorPriority: Record<Operator, number> = {
     '+': 1,
     '-': 1,

@@ -182,7 +182,8 @@
             "ruleCount": "{count} reguł",
             "accountActivationAndResendValidationEmailTip": "Link aktywacyjny wysłano na adres {email}. Jeśli wiadomość nie dotarła, wpisz ponownie hasło i kliknij poniższy przycisk, aby wysłać ją ponownie.",
             "resendValidationEmailTip": "Jeśli wiadomość nie dotarła, wpisz ponownie hasło i kliknij poniższy przycisk, aby ponownie wysłać wiadomość na adres {email}.",
-            "oauth2bindTip": "Logujesz się do użytkownika {userName} za pomocą {providerName}. Wprowadź hasło ezBookkeeping, aby potwierdzić."
+            "oauth2bindTip": "Logujesz się do użytkownika {userName} za pomocą {providerName}. Wprowadź hasło ezBookkeeping, aby potwierdzić.",
+            "assetPricesHint": "Wpisz ceny w {currency} za gram (metale szlachetne) lub za monetę (kryptowaluty). Służą do wyceny Twoich zasobów w {currency}."
         }
     },
     "dataExport": {
@@ -3083,5 +3084,8 @@
     "Unit of Precious Metals": "Jednostka metali szlachetnych",
     "Grams (g)": "Gramy (g)",
     "Troy ounces (oz)": "Uncje trojańskie (oz)",
-    "Date unknown": "Data nieznana"
+    "Date unknown": "Data nieznana",
+    "Asset Prices": "Ceny aktywów",
+    "Asset": "Aktywo",
+    "Price": "Cena"
 }

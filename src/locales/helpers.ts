@@ -1780,6 +1780,10 @@ export function useI18n() {
         }
 
         for (const exchangeRate of exchangeRatesData.exchangeRates) {
+            if (isAssetCurrency(exchangeRate.currency)) {
+                continue; // prices of assets are managed in the asset prices page
+            }
+
             availableExchangeRates.push({
                 currencyCode: exchangeRate.currency,
                 currencyDisplayName: getCurrencyName(exchangeRate.currency),
