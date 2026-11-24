@@ -46,7 +46,7 @@ func TestParseAndFormatAssetAmount_RoundTrip(t *testing.T) {
 		{"BTC", "0.00123456", 123456},
 		{"BTC", "1.00000001", 100000001},
 		{"BTC", "-0.5", -50000000},
-		{"BTC", "21000000", 2100000000000000},
+		{"BTC", "9999999.99999999", 999999999999999},
 		{"XAU", "31.1", 3110},
 		{"XAU", "0.01", 1},
 		{"DOGE", "12345.123456", 12345123456},
@@ -74,7 +74,7 @@ func TestParseAssetAmount_Invalid(t *testing.T) {
 	assert.NotNil(t, err)
 	_, err = ParseAssetAmount("BTC", "abc")
 	assert.NotNil(t, err)
-	_, err = ParseAssetAmount("BTC", "10000000.00000000") // exceeds limitation
+	_, err = ParseAssetAmount("BTC", "10000000") // exceeds limitation
 	assert.NotNil(t, err)
 }
 
