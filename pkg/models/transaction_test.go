@@ -332,3 +332,23 @@ func TestTransactionAmountsResponseItemAmountInfoSliceLess(t *testing.T) {
 	assert.Equal(t, "EUR", amountInfoSlice[1].Currency)
 	assert.Equal(t, "USD", amountInfoSlice[2].Currency)
 }
+
+func TestTransactionToTransactionInfoResponse_TimeUnknown(t *testing.T) {
+	transaction := &Transaction{
+		TransactionId:   1,
+		Type:            TRANSACTION_DB_TYPE_EXPENSE,
+		AccountId:       2,
+		Amount:          123456,
+		TransactionTime: 1700000000000,
+		TimeUnknown:     true,
+	}
+
+	response := transaction.ToTransactionInfoResponse(nil, true)
+	assert.NotNil(t, response)
+	assert.True(t, response.TimeUnknown)
+	assert.Equal(t, int64(123456), response.SourceAmount)
+
+	transaction.TimeUnknown = false
+	response = transaction.ToTransactionInfoResponse(nil, true)
+	assert.False(t, response.TimeUnknown)
+}

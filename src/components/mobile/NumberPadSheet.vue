@@ -87,7 +87,7 @@ import { useI18nUIComponents, isiOS } from '@/lib/ui/mobile.ts';
 
 import { type BigDecimal, NumeralSystem } from '@/core/numeral.ts';
 import { AMOUNT_FACTOR } from '@/consts/numeral.ts';
-import { ALL_CURRENCIES } from '@/consts/currency.ts';
+import { getCurrencyFraction } from '@/lib/currency.ts';
 import { isNumber } from '@/lib/common.ts';
 import { BIG_DECIMAL_ZERO, parseBigDecimal, isBigDecimal } from '@/lib/numeral.ts';
 import logger from '@/lib/logger.ts';
@@ -112,6 +112,7 @@ const {
     getAllLocalizedDigits,
     getCurrentNumeralSystemType,
     getCurrentDecimalSeparator,
+    getAmountInputDecimalCount,
     parseAmountFromLocalizedNumerals,
     parseAmountFromWesternArabicNumerals,
     formatAmountToWesternArabicNumeralsWithoutDigitGrouping,
@@ -133,11 +134,13 @@ const digits = computed<string[]>(() => getAllLocalizedDigits());
 const decimalSeparator = computed<string>(() => getCurrentDecimalSeparator());
 
 const supportDecimalSeparator = computed<boolean>(() => {
-    if (!props.currency || !ALL_CURRENCIES[props.currency] || !isNumber(ALL_CURRENCIES[props.currency]!.fraction)) {
+    const fraction = getCurrencyFraction(props.currency);
+
+    if (!isNumber(fraction)) {
         return true;
     }
 
-    return (ALL_CURRENCIES[props.currency]!.fraction as number) > 0;
+    return fraction > 0;
 });
 
 const currentDisplay = computed<string>(() => {
@@ -196,7 +199,7 @@ function getStringValue(value: BigDecimal, hideZero: boolean): string {
         return '';
     }
 
-    const textualNumber = formatAmountToWesternArabicNumeralsWithoutDigitGrouping(value, props.currency);
+    const textualNumber = formatAmountToWesternArabicNumeralsWithoutDigitGrouping(value, props.currency, true);
 
     const decimalSeparator = getCurrentDecimalSeparator();
     const decimalSeparatorPos = textualNumber.indexOf(decimalSeparator);
@@ -250,14 +253,14 @@ function inputNum(num: number): void {
 
     const decimalSeparatorPos = currentValue.value.indexOf(decimalSeparator.value);
 
-    if (decimalSeparatorPos >= 0 && currentValue.value.substring(decimalSeparatorPos + 1, currentValue.value.length).length >= 2) {
+    if (decimalSeparatorPos >= 0 && currentValue.value.substring(decimalSeparatorPos + 1, currentValue.value.length).length >= getAmountInputDecimalCount(props.currency)) {
         return;
     }
 
     const newValue = currentValue.value + num.toString();
 
     if (isNumber(props.minValue)) {
-        const current = parseAmountFromWesternArabicNumerals(newValue);
+        const current = parseAmountFromWesternArabicNumerals(newValue, props.currency);
 
         if (current < (props.minValue)) {
             return;
@@ -265,7 +268,7 @@ function inputNum(num: number): void {
     }
 
     if (isNumber(props.maxValue)) {
-        const current = parseAmountFromWesternArabicNumerals(newValue);
+        const current = parseAmountFromWesternArabicNumerals(newValue, props.currency);
 
         if (current > (props.maxValue)) {
             return;
@@ -351,7 +354,7 @@ function paste(): void {
             return;
         }
 
-        const parsedAmount = parseAmountFromLocalizedNumerals(text);
+        const parsedAmount = parseAmountFromLocalizedNumerals(text, props.currency);
 
         if (Number.isNaN(parsedAmount) || !Number.isFinite(parsedAmount)) {
             showToast('Cannot parse amount from clipboard');
@@ -382,8 +385,8 @@ function paste(): void {
 
 function confirm(): boolean {
     if (currentSymbol.value && currentValue.value.length >= 1) {
-        const previous: BigDecimal = parseBigDecimal(parseAmountFromWesternArabicNumerals(previousValue.value));
-        const current: BigDecimal = parseBigDecimal(parseAmountFromWesternArabicNumerals(currentValue.value));
+        const previous: BigDecimal = parseBigDecimal(parseAmountFromWesternArabicNumerals(previousValue.value, props.currency));
+        const current: BigDecimal = parseBigDecimal(parseAmountFromWesternArabicNumerals(currentValue.value, props.currency));
         let finalValue: BigDecimal = BIG_DECIMAL_ZERO;
 
         switch (currentSymbol.value) {
@@ -394,7 +397,8 @@ function confirm(): boolean {
                 finalValue = previous.subtract(current);
                 break;
             case '×':
-                finalValue = previous.multiply(current).divide(AMOUNT_FACTOR).truncate();
+                // the operand of multiplication is a plain multiplier (not an amount of the currency)
+                finalValue = previous.multiply(parseBigDecimal(parseAmountFromWesternArabicNumerals(currentValue.value))).divide(AMOUNT_FACTOR).truncate();
                 break;
             default:
                 finalValue = previous;
@@ -426,7 +430,7 @@ function confirm(): boolean {
 
         return true;
     } else {
-        let value: number = parseAmountFromWesternArabicNumerals(currentValue.value);
+        let value: number = parseAmountFromWesternArabicNumerals(currentValue.value, props.currency);
 
         if (props.flipNegative) {
             value = -value;

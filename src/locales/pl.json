@@ -182,7 +182,8 @@
             "ruleCount": "{count} reguł",
             "accountActivationAndResendValidationEmailTip": "Link aktywacyjny wysłano na adres {email}. Jeśli wiadomość nie dotarła, wpisz ponownie hasło i kliknij poniższy przycisk, aby wysłać ją ponownie.",
             "resendValidationEmailTip": "Jeśli wiadomość nie dotarła, wpisz ponownie hasło i kliknij poniższy przycisk, aby ponownie wysłać wiadomość na adres {email}.",
-            "oauth2bindTip": "Logujesz się do użytkownika {userName} za pomocą {providerName}. Wprowadź hasło ezBookkeeping, aby potwierdzić."
+            "oauth2bindTip": "Logujesz się do użytkownika {userName} za pomocą {providerName}. Wprowadź hasło ezBookkeeping, aby potwierdzić.",
+            "assetPricesHint": "Wpisz ceny w {currency} za gram (metale szlachetne) lub za monetę (kryptowaluty). Służą do wyceny Twoich zasobów w {currency}."
         }
     },
     "dataExport": {
@@ -670,7 +671,24 @@
             "ZAR": "Rand południowoafrykański",
             "ZMW": "Kwacha zambijska",
             "ZWG": "Złoto Zimbabwe",
-            "ZWL": "Dolar zimbabwe (2009)"
+            "ZWL": "Dolar zimbabwe (2009)",
+            "XAU": "Złoto",
+            "XAG": "Srebro",
+            "BTC": "Bitcoin",
+            "ETH": "Ethereum",
+            "SOL": "Solana",
+            "USDT": "Tether",
+            "USDC": "USD Coin",
+            "XRP": "XRP",
+            "ADA": "Cardano",
+            "DOGE": "Dogecoin",
+            "DOT": "Polkadot",
+            "LTC": "Litecoin",
+            "BNB": "BNB",
+            "AVAX": "Avalanche",
+            "LINK": "Chainlink",
+            "XMR": "Monero",
+            "TRX": "TRON"
         },
         "unit": {
             "Afghani": {
@@ -3060,5 +3078,14 @@
     "Parameter Invalid": "Nieprawidłowy parametr",
     "Numeric Overflow": "Przepełnienie liczbowe",
     "Invalid date range": "Nieprawidłowy zakres dat",
-    "Click to close": "Kliknij, aby zamknąć"
+    "Click to close": "Kliknij, aby zamknąć",
+    "Metals": "Metale szlachetne",
+    "Crypto": "Kryptowaluty",
+    "Unit of Precious Metals": "Jednostka metali szlachetnych",
+    "Grams (g)": "Gramy (g)",
+    "Troy ounces (oz)": "Uncje trojańskie (oz)",
+    "Date unknown": "Data nieznana",
+    "Asset Prices": "Ceny aktywów",
+    "Asset": "Aktywo",
+    "Price": "Cena"
 }

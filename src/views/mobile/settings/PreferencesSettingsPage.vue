@@ -291,6 +291,35 @@
             <f7-list-item
                 link="#"
                 class="item-truncate-after-text"
+                popover-open=".metal-unit-popover-menu"
+            >
+                <template #after-title>
+                    <div class="item-actual-title">
+                        <span>{{ tt('Unit of Precious Metals') }}</span>
+                    </div>
+                </template>
+                <template #after>
+                    {{ findNameByValue(allMetalUnits, metalDisplayUnit) }}
+                </template>
+                <f7-popover class="metal-unit-popover-menu">
+                    <f7-list dividers>
+                        <f7-list-item link="#" no-chevron popover-close
+                                      :title="option.name"
+                                      :class="{ 'list-item-selected': metalDisplayUnit === option.value }"
+                                      :key="option.value"
+                                      v-for="option in allMetalUnits"
+                                      @click="metalDisplayUnit = option.value">
+                            <template #after>
+                                <f7-icon class="list-item-checked-icon" f7="checkmark_alt" v-if="metalDisplayUnit === option.value"></f7-icon>
+                            </template>
+                        </f7-list-item>
+                    </f7-list>
+                </f7-popover>
+            </f7-list-item>
+
+            <f7-list-item
+                link="#"
+                class="item-truncate-after-text"
                 popover-open=".auto-save-draft-popover-menu"
             >
                 <template #after-title>
@@ -550,6 +579,8 @@ const {
     showTagInTransactionListPage,
     showPictureIndicatorInTransactionListPage,
     defaultKeywordMatchModeInTransactionListPage,
+    allMetalUnits,
+    metalDisplayUnit,
     autoSaveTransactionDraft,
     isAutoGetCurrentGeoLocation,
     transactionPictureQuality,

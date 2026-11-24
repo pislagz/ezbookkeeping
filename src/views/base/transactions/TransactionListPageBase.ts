@@ -344,6 +344,10 @@ export function useTransactionListPageBase() {
     }
 
     function isSameAsDefaultTimezoneOffsetMinutes(transaction: Transaction): boolean {
+        if (transaction.timeUnknown) {
+            return true; // do not show the timezone of an unknown date
+        }
+
         return transaction.utcOffset === getTimezoneOffsetMinutes(transaction.time);
     }
 
@@ -420,6 +424,10 @@ export function useTransactionListPageBase() {
     }
 
     function getDisplayTime(transaction: Transaction): string {
+        if (transaction.timeUnknown) {
+            return tt('Date unknown');
+        }
+
         const dateTime = parseDateTimeFromUnixTimeWithTimezoneOffset(transaction.time, transaction.utcOffset);
         return formatDateTimeToShortTime(dateTime);
     }

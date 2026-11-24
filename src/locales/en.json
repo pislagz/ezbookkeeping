@@ -182,7 +182,8 @@
             "ruleCount": "{count} rules",
             "accountActivationAndResendValidationEmailTip": "Account activation link has been sent to your email address: {email}, If you don't receive the mail, please fill password again and click the button below to resend the validation mail.",
             "resendValidationEmailTip": "If you don't receive the mail, please fill password again and click the button below to resend the validation mail to: {email}",
-            "oauth2bindTip": "You're signing in to the {userName} user using {providerName}. Please enter your ezBookkeeping password to verify."
+            "oauth2bindTip": "You're signing in to the {userName} user using {providerName}. Please enter your ezBookkeeping password to verify.",
+            "assetPricesHint": "Enter prices in {currency} per gram (precious metals) or per coin (crypto). They are used to value your holdings in {currency}."
         }
     },
     "dataExport": {
@@ -670,7 +671,24 @@
             "ZAR": "South African Rand",
             "ZMW": "Zambian Kwacha",
             "ZWG": "Zimbabwe Gold",
-            "ZWL": "Zimbabwean Dollar"
+            "ZWL": "Zimbabwean Dollar",
+            "XAU": "Gold",
+            "XAG": "Silver",
+            "BTC": "Bitcoin",
+            "ETH": "Ethereum",
+            "SOL": "Solana",
+            "USDT": "Tether",
+            "USDC": "USD Coin",
+            "XRP": "XRP",
+            "ADA": "Cardano",
+            "DOGE": "Dogecoin",
+            "DOT": "Polkadot",
+            "LTC": "Litecoin",
+            "BNB": "BNB",
+            "AVAX": "Avalanche",
+            "LINK": "Chainlink",
+            "XMR": "Monero",
+            "TRX": "TRON"
         },
         "unit": {
             "Afghani": {
@@ -3060,5 +3078,14 @@
     "Parameter Invalid": "Parameter Invalid",
     "Numeric Overflow": "Numeric Overflow",
     "Invalid date range": "Invalid date range",
-    "Click to close": "Click to close"
+    "Click to close": "Click to close",
+    "Metals": "Metals",
+    "Crypto": "Crypto",
+    "Unit of Precious Metals": "Unit of Precious Metals",
+    "Grams (g)": "Grams (g)",
+    "Troy ounces (oz)": "Troy ounces (oz)",
+    "Date unknown": "Date unknown",
+    "Asset Prices": "Asset Prices",
+    "Asset": "Asset",
+    "Price": "Price"
 }

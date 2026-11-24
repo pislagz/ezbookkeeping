@@ -42,7 +42,8 @@ export interface NumberFormatOptions {
     readonly digitGrouping: DigitGroupingType;
     readonly digitGroupingSymbol: string;
     readonly decimalSeparator: string;
-    readonly decimalNumberCount?: number;
+    readonly decimalNumberCount?: number; // minimum count of displayed decimals (trailing zeros beyond this count are trimmed)
+    readonly amountScale?: number; // count of decimals the integer amount is stored with, default is 2
     readonly trimTailZero?: boolean;
 }
 

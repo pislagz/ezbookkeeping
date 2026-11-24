@@ -58,6 +58,13 @@ export function useAppSettingPageBase() {
     const allCurrencySortingTypes = computed<TypeAndDisplayName[]>(() => getAllCurrencySortingTypes());
     const allKeywordMatchModes = computed<TypeAndDisplayName[]>(() => getAllKeywordMatchModes());
 
+    const allMetalUnits = computed<NameValue[]>(() => {
+        return [
+            { name: tt('Grams (g)'), value: 'g' },
+            { name: tt('Troy ounces (oz)'), value: 'oz' }
+        ];
+    });
+
     const allAutoSaveTransactionDraftTypes = computed<NameValue[]>(() => {
         return [
             { name: tt('Disabled'), value: 'disabled' },
@@ -174,6 +181,11 @@ export function useAppSettingPageBase() {
         set: (value: boolean) => settingsStore.setAutoUploadTransactionPictureForAIRecognition(value)
     });
 
+    const metalDisplayUnit = computed<string>({
+        get: () => settingsStore.appSettings.metalDisplayUnit,
+        set: (value: string) => settingsStore.setMetalDisplayUnit(value)
+    });
+
     const currencySortByInExchangeRatesPage = computed<number>({
         get: () => settingsStore.appSettings.currencySortByInExchangeRatesPage,
         set: (value: number) => settingsStore.setCurrencySortByInExchangeRatesPage(value)
@@ -244,6 +256,7 @@ export function useAppSettingPageBase() {
         allTimezoneTypesUsedForStatistics,
         allCurrencySortingTypes,
         allKeywordMatchModes,
+        allMetalUnits,
         allAutoSaveTransactionDraftTypes,
         allImageUploadQualityTypes,
         allReconciliationStatementDateRanges,
@@ -267,6 +280,7 @@ export function useAppSettingPageBase() {
         defaultKeywordMatchModeInTransactionListPage,
         autoSaveTransactionDraft,
         isAutoGetCurrentGeoLocation,
+        metalDisplayUnit,
         currencySortByInExchangeRatesPage,
         chartColorSchemeContent,
         accountsIncludedInHomePageOverviewDisplayContent,

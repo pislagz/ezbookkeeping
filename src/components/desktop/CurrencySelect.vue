@@ -57,6 +57,7 @@ const props = defineProps<{
     label?: string;
     placeholder?: string;
     withNotSet?: boolean;
+    withAssets?: boolean;
     allowedCurrencies?: string[];
     modelValue: string;
     autoSize?: boolean;
@@ -69,7 +70,7 @@ const emit = defineEmits<{
 const { tt, getAllCurrencies } = useI18n();
 
 const allCurrencies = computed<LocalizedCurrencyInfo[]>(() => {
-    const currencies = getAllCurrencies();
+    const currencies = getAllCurrencies(false, props.withAssets);
 
     if (props.allowedCurrencies && props.allowedCurrencies.length > 0) {
         const allowedCurrencies: Record<string, boolean> = {};

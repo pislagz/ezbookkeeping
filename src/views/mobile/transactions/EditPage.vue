@@ -265,6 +265,16 @@
             </f7-list-item>
 
             <f7-list-item
+                :class="{ 'disabled': mode === TransactionEditPageMode.View }"
+                v-if="pageTypeAndMode?.type === TransactionEditPageType.Transaction && transaction instanceof Transaction && transaction.type !== TransactionType.ModifyBalance"
+            >
+                <template #title>{{ tt('Date unknown') }}</template>
+                <template #after>
+                    <f7-toggle :checked="transaction.timeUnknown" @toggle:change="transaction.timeUnknown = $event"></f7-toggle>
+                </template>
+            </f7-list-item>
+
+            <f7-list-item
                 class="list-item-with-header-and-title"
                 link="#" no-chevron
                 :class="{ 'readonly': mode === TransactionEditPageMode.View }"
@@ -1288,7 +1298,7 @@ function pasteAmount(type: 'sourceAmount' | 'destinationAmount'): void {
             return;
         }
 
-        const parsedAmount = parseAmountFromLocalizedNumerals(text);
+        const parsedAmount = parseAmountFromLocalizedNumerals(text, type === 'sourceAmount' ? sourceAccountCurrency.value : destinationAccountCurrency.value);
 
         if (Number.isNaN(parsedAmount) || !Number.isFinite(parsedAmount)) {
             showToast('Cannot parse amount from clipboard');

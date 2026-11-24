@@ -247,6 +247,22 @@
                 <v-form>
                     <v-card-text class="pa-0 text-body-medium">
                         <div class="setting-item">
+                            <span>{{ tt('Unit of Precious Metals') }}</span>
+                            <v-spacer/>
+                            <v-select
+                                class="ms-4"
+                                density="compact"
+                                item-title="name"
+                                item-value="value"
+                                persistent-placeholder
+                                max-width="400px"
+                                :placeholder="tt('Unit of Precious Metals')"
+                                :items="allMetalUnits"
+                                v-model="metalDisplayUnit"
+                            />
+                        </div>
+
+                        <div class="setting-item">
                             <span>{{ tt('Automatically Save Draft') }}</span>
                             <v-spacer/>
                             <v-select
@@ -516,6 +532,8 @@ const {
     showTagInTransactionListPage,
     showPictureIndicatorInTransactionListPage,
     defaultKeywordMatchModeInTransactionListPage,
+    allMetalUnits,
+    metalDisplayUnit,
     autoSaveTransactionDraft,
     isAutoGetCurrentGeoLocation,
     transactionPictureQuality,

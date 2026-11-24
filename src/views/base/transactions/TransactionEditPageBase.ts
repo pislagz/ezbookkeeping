@@ -232,7 +232,7 @@ export function useTransactionEditPageBase(type: TransactionEditPageType, initMo
             return amountName;
         }
 
-        let amountInDefaultCurrency = getExchangedAmountByRate(parseBigDecimal(transaction.value.sourceAmount), fromExchangeRate.rate, toExchangeRate.rate);
+        let amountInDefaultCurrency = getExchangedAmountByRate(parseBigDecimal(transaction.value.sourceAmount), fromExchangeRate.rate, toExchangeRate.rate, sourceAccount.currency, defaultCurrency.value);
 
         if (!amountInDefaultCurrency) {
             return amountName;

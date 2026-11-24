@@ -8,6 +8,8 @@
                         <v-btn class="ms-3" color="default" variant="outlined"
                                :disabled="loading" @click="update"
                                v-if="isUserCustomExchangeRates">{{ tt('Update') }}</v-btn>
+                        <v-btn class="ms-3" color="default" variant="outlined"
+                               :disabled="loading" @click="assetPricesDialog?.open()">{{ tt('Asset Prices') }}</v-btn>
                         <v-btn density="compact" color="default" variant="text" class="ms-2"
                                :aria-label="tt('Refresh')" :icon="true" :loading="loading" @click="reload(true)">
                             <template #loader>
@@ -121,6 +123,7 @@
     </v-row>
 
     <update-dialog ref="updateDialog" />
+    <asset-prices-dialog ref="assetPricesDialog" />
 
     <confirm-dialog ref="confirmDialog"/>
 </template>
@@ -128,6 +131,7 @@
 <script setup lang="ts">
 import ConfirmDialog from '@/components/desktop/ConfirmDialog.vue';
 import UpdateDialog from './list/dialogs/UpdateDialog.vue';
+import AssetPricesDialog from './list/dialogs/AssetPricesDialog.vue';
 
 import { ref, computed, useTemplateRef } from 'vue';
 
@@ -154,6 +158,7 @@ import {
 
 type ConfirmDialogType = InstanceType<typeof ConfirmDialog>;
 type UpdateDialogType = InstanceType<typeof UpdateDialog>;
+type AssetPricesDialogType = InstanceType<typeof AssetPricesDialog>;
 
 const { tt, getCurrentNumeralSystemType, formatExchangeRateAmountToWesternArabicNumerals } = useI18n();
 const {
@@ -173,6 +178,7 @@ const desktopPageStore = useDesktopPageStore();
 
 const confirmDialog = useTemplateRef<ConfirmDialogType>('confirmDialog');
 const updateDialog = useTemplateRef<UpdateDialogType>('updateDialog');
+const assetPricesDialog = useTemplateRef<AssetPricesDialogType>('assetPricesDialog');
 
 const loading = ref<boolean>(true);
 const updating = ref<boolean>(false);

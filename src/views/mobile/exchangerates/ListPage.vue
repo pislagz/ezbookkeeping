@@ -105,6 +105,11 @@
                 </f7-actions-button>
             </f7-actions-group>
             <f7-actions-group>
+                <f7-actions-button :class="{ 'disabled': loading }" @click="f7router.navigate('/exchange_rates/assets')">
+                    <span>{{ tt('Asset Prices') }}</span>
+                </f7-actions-button>
+            </f7-actions-group>
+            <f7-actions-group>
                 <f7-actions-button :class="{ 'disabled': loading }" @click="reload(undefined)">
                     <span>{{ tt('Refresh') }}</span>
                 </f7-actions-button>

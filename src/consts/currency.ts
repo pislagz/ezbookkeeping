@@ -1292,6 +1292,41 @@ export const ALL_CURRENCIES: Record<string, CurrencyInfo> = {
     }
 };
 
+export interface AssetDefinition {
+    code: string;
+    kind: 'metal' | 'crypto';
+    scale: number; // count of decimals the amount is stored with (stored integer = amount * 10^scale)
+    displayDecimals: number;
+    coinGeckoId?: string;
+}
+
+// Precious metals and crypto assets which can be used as an account currency. Keep in sync with pkg/core/asset.go
+// Metals: the whole unit is one gram, amounts are stored in 0.01 g (so they can be shown in grams or troy ounces)
+// Crypto: the whole unit is one coin, amounts are stored with the per-asset scale (e.g. 8 decimals for BTC)
+export const ALL_ASSETS: AssetDefinition[] = [
+    { code: 'XAU', kind: 'metal', scale: 2, displayDecimals: 2 },
+    { code: 'XAG', kind: 'metal', scale: 2, displayDecimals: 2 },
+    { code: 'BTC', kind: 'crypto', scale: 8, displayDecimals: 8, coinGeckoId: 'bitcoin' },
+    { code: 'ETH', kind: 'crypto', scale: 8, displayDecimals: 8, coinGeckoId: 'ethereum' },
+    { code: 'SOL', kind: 'crypto', scale: 8, displayDecimals: 8, coinGeckoId: 'solana' },
+    { code: 'USDT', kind: 'crypto', scale: 6, displayDecimals: 6, coinGeckoId: 'tether' },
+    { code: 'USDC', kind: 'crypto', scale: 6, displayDecimals: 6, coinGeckoId: 'usd-coin' },
+    { code: 'XRP', kind: 'crypto', scale: 6, displayDecimals: 6, coinGeckoId: 'ripple' },
+    { code: 'ADA', kind: 'crypto', scale: 6, displayDecimals: 6, coinGeckoId: 'cardano' },
+    { code: 'DOGE', kind: 'crypto', scale: 6, displayDecimals: 6, coinGeckoId: 'dogecoin' },
+    { code: 'DOT', kind: 'crypto', scale: 8, displayDecimals: 8, coinGeckoId: 'polkadot' },
+    { code: 'LTC', kind: 'crypto', scale: 8, displayDecimals: 8, coinGeckoId: 'litecoin' },
+    { code: 'BNB', kind: 'crypto', scale: 8, displayDecimals: 8, coinGeckoId: 'binancecoin' },
+    { code: 'AVAX', kind: 'crypto', scale: 8, displayDecimals: 8, coinGeckoId: 'avalanche-2' },
+    { code: 'LINK', kind: 'crypto', scale: 8, displayDecimals: 8, coinGeckoId: 'chainlink' },
+    { code: 'XMR', kind: 'crypto', scale: 8, displayDecimals: 8, coinGeckoId: 'monero' },
+    { code: 'TRX', kind: 'crypto', scale: 6, displayDecimals: 6, coinGeckoId: 'tron' }
+];
+
+export const ALL_ASSETS_BY_CODE: Record<string, AssetDefinition> = Object.fromEntries(ALL_ASSETS.map(asset => [asset.code, asset]));
+
+export const GRAMS_PER_TROY_OUNCE: number = 31.1034768;
+
 export const DEFAULT_CURRENCY_SYMBOL: string = '¤';
 export const DEFAULT_CURRENCY_CODE: string = (ALL_CURRENCIES['USD'] as CurrencyInfo).code;
 export const ACCOUNT_CURRENCY_NOT_SET_VALUE: string = '---';

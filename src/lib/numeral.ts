@@ -10,6 +10,7 @@ import {
 } from '@/core/numeral.ts';
 
 import { AMOUNT_FACTOR } from '@/consts/numeral.ts';
+import { getCurrencyStorageScale } from '@/lib/asset.ts';
 
 import { DEFAULT_DECIMAL_NUMBER_COUNT, MAX_SUPPORTED_DECIMAL_NUMBER_COUNT, DISPLAY_HIDDEN_AMOUNT } from '@/consts/numeral.ts';
 
@@ -352,6 +353,8 @@ export function parseAmount(str: string, options: NumberFormatOptions): number {
     const numeralSystem = options.numeralSystem || NumeralSystem.Default;
     const decimalSeparator = options.decimalSeparator || DecimalSeparator.Default.symbol;
     const digitGroupingSymbol = options.digitGroupingSymbol || DigitGroupingSymbol.Default.symbol;
+    const scale = getAmountScale(options);
+    const factor = 10 ** scale;
 
     if (str.indexOf(digitGroupingSymbol) >= 0) {
         str = removeAll(str, digitGroupingSymbol);
@@ -360,24 +363,32 @@ export function parseAmount(str: string, options: NumberFormatOptions): number {
     let decimalSeparatorPos = str.indexOf(decimalSeparator);
 
     if (decimalSeparatorPos < 0) {
-        return sign * numeralSystem.parseInt(str) * AMOUNT_FACTOR;
+        return sign * numeralSystem.parseInt(str) * factor;
     } else if (decimalSeparatorPos === 0) {
         str = numeralSystem.digitZero + str;
         decimalSeparatorPos++;
     }
 
     const integer = str.substring(0, decimalSeparatorPos);
-    const decimals = str.substring(decimalSeparatorPos + 1, str.length);
+    let decimals = str.substring(decimalSeparatorPos + 1, str.length);
 
     if (decimals.length < 1) {
-        return sign * numeralSystem.parseInt(integer) * AMOUNT_FACTOR;
-    } else if (decimals.length === 1) {
-        return sign * numeralSystem.parseInt(integer) * AMOUNT_FACTOR + sign * numeralSystem.parseInt(decimals) * AMOUNT_FACTOR / 10;
-    } else if (decimals.length === 2) {
-        return sign * numeralSystem.parseInt(integer) * AMOUNT_FACTOR + sign * numeralSystem.parseInt(decimals);
-    } else {
-        return sign * numeralSystem.parseInt(integer) * AMOUNT_FACTOR + sign * numeralSystem.parseInt(decimals.substring(0, 2));
+        return sign * numeralSystem.parseInt(integer) * factor;
     }
+
+    // ignore the digits beyond the scale, and fill the missing digits with zero
+    decimals = decimals.substring(0, scale);
+    const decimalsValue = numeralSystem.parseInt(decimals) * (10 ** (scale - decimals.length));
+
+    return sign * numeralSystem.parseInt(integer) * factor + sign * decimalsValue;
+}
+
+function getAmountScale(options: NumberFormatOptions): number {
+    if (isNumber(options.amountScale) && options.amountScale >= 0) {
+        return options.amountScale;
+    }
+
+    return MAX_SUPPORTED_DECIMAL_NUMBER_COUNT;
 }
 
 export function formatAmount(value: BigDecimal, options: NumberFormatOptions): string {
@@ -401,42 +412,26 @@ export function formatAmount(value: BigDecimal, options: NumberFormatOptions): s
     const digitGroupingType = options.digitGrouping;
     const digitGroupingSymbol = options.digitGroupingSymbol || DigitGroupingSymbol.Default.symbol;
     const decimalSeparator = options.decimalSeparator || DecimalSeparator.Default.symbol;
+    const scale = getAmountScale(options);
     let decimalNumberCount = options.decimalNumberCount;
 
-    if (!isNumber(decimalNumberCount) || decimalNumberCount > MAX_SUPPORTED_DECIMAL_NUMBER_COUNT) {
-        decimalNumberCount = DEFAULT_DECIMAL_NUMBER_COUNT;
+    if (!isNumber(decimalNumberCount) || decimalNumberCount > scale) {
+        decimalNumberCount = Math.min(DEFAULT_DECIMAL_NUMBER_COUNT, scale);
     }
 
-    let integer = numeralSystem.digitZero;
-    let decimals = numeralSystem.doubleDigitZero;
-
-    if (textualNumber.length > 2) {
-        integer = textualNumber.substring(0, textualNumber.length - 2);
-        decimals = textualNumber.substring(textualNumber.length - 2);
-    } else if (textualNumber.length === 2) {
-        decimals = textualNumber;
-    } else if (textualNumber.length === 1) {
-        decimals = numeralSystem.digitZero + textualNumber;
+    // pad the integer amount with leading zeros, so the textual number has at least (scale + 1) digits
+    while (textualNumber.length <= scale) {
+        textualNumber = numeralSystem.digitZero + textualNumber;
     }
 
-    if (decimalNumberCount === 0) {
-        if (decimals === numeralSystem.doubleDigitZero) {
-            decimals = '';
-        } else if (decimals.charAt(1) === numeralSystem.digitZero) {
-            decimals = decimals.charAt(0);
-        }
-    } else if (decimalNumberCount === 1) {
-        if (decimals.charAt(1) === numeralSystem.digitZero) {
-            decimals = decimals.charAt(0);
-        }
-    }
+    let integer = textualNumber.substring(0, textualNumber.length - scale);
+    let decimals = textualNumber.substring(textualNumber.length - scale);
 
-    if (options.trimTailZero) {
-        if (decimals.charAt(0) === numeralSystem.digitZero && decimals.charAt(1) === numeralSystem.digitZero) {
-            decimals = '';
-        } else if (decimals.charAt(0) !== numeralSystem.digitZero && decimals.charAt(1) === numeralSystem.digitZero) {
-            decimals = decimals.charAt(0);
-        }
+    // trim trailing zeros, but keep at least `decimalNumberCount` decimals
+    const trimmedMinLength = options.trimTailZero ? 0 : decimalNumberCount;
+
+    while (decimals.length > trimmedMinLength && decimals.charAt(decimals.length - 1) === numeralSystem.digitZero) {
+        decimals = decimals.substring(0, decimals.length - 1);
     }
 
     if (integer && integer.length > 1 && digitGroupingType) {
@@ -572,9 +567,16 @@ export function getAdaptiveDisplayAmountRate(amount1: number, amount2: number, o
     }
 }
 
-export function getExchangedAmountByRate(amount: BigDecimal, fromRate: string, toRate: string): BigDecimal | null {
+// fromCurrency / toCurrency are optional, they are used to adjust the stored scale of assets (e.g. BTC amounts are stored with 8 decimals, PLN amounts with 2 decimals)
+export function getExchangedAmountByRate(amount: BigDecimal, fromRate: string, toRate: string, fromCurrency?: string, toCurrency?: string): BigDecimal | null {
     try {
-        const exchangeRate = parseBigDecimal(toRate).divide(parseBigDecimal(fromRate));
+        let exchangeRate = parseBigDecimal(toRate).divide(parseBigDecimal(fromRate));
+        const scaleDiff = getCurrencyStorageScale(toCurrency) - getCurrencyStorageScale(fromCurrency);
+
+        if (scaleDiff !== 0) {
+            exchangeRate = exchangeRate.multiply(10 ** scaleDiff);
+        }
+
         return amount.multiply(exchangeRate);
     } catch (ex) {
         logger.warn(`failed to get exchanged amount by rate: ${ex}`);
