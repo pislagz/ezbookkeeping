@@ -134,14 +134,15 @@ func (u *Updater) updateGold(c core.Context, uid int64, defaultCurrency string, 
 		return
 	}
 
-	hasPrice, err := services.AssetPrices.HasAnyPrice(c, uid, goldAssetCode)
+	// backfill one year when there is no automatically fetched gold price yet (manual prices do not count) or the newest one is older than the recent window
+	latestAutoDate, err := services.AssetPrices.GetLatestAutoPriceDate(c, uid, goldAssetCode)
 
 	if err != nil {
 		log.Warnf(c, "[asset_prices.updateGold] failed to check gold prices of user \"uid:%d\", because %s", uid, err.Error())
 		return
 	}
 
-	series, err := u.getGoldSeries(c, !hasPrice)
+	series, err := u.getGoldSeries(c, NeedsGoldBackfill(latestAutoDate, u.now()))
 
 	if err != nil {
 		log.Warnf(c, "[asset_prices.updateGold] failed to fetch gold prices, keep old prices, because %s", err.Error())
@@ -321,4 +322,16 @@ func (u *Updater) get(c core.Context, url string) ([]byte, int, error) {
 	}
 
 	return body, resp.StatusCode, nil
+}
+
+// NeedsGoldBackfill returns whether the full year of gold prices must be requested, i.e. there is no automatically fetched price yet or the newest one is older than the recent window
+func NeedsGoldBackfill(latestAutoDate string, now time.Time) bool {
+	if latestAutoDate == "" {
+		return true
+	}
+
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	recentFrom := today.AddDate(0, 0, -goldRecentDays).Format(models.AssetPriceDateFormat)
+
+	return latestAutoDate < recentFrom
 }

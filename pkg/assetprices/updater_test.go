@@ -115,3 +115,11 @@ func TestGetCryptoPrices_CachedPerCurrencyAndRequestIsFixed(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, int32(2), requests.Load())
 }
+
+func TestNeedsGoldBackfill(t *testing.T) {
+	now := time.Date(2026, 11, 24, 10, 0, 0, 0, time.UTC)
+	assert.True(t, NeedsGoldBackfill("", now))
+	assert.True(t, NeedsGoldBackfill("2026-11-01", now))
+	assert.False(t, NeedsGoldBackfill("2026-11-10", now))
+	assert.False(t, NeedsGoldBackfill("2026-11-23", now))
+}

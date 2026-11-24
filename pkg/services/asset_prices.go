@@ -77,15 +77,20 @@ func (s *AssetPricesService) GetPriceSeries(c core.Context, uid int64, asset str
 	return prices, err
 }
 
-// HasAnyPrice returns whether the user has at least one price (any source) of the asset
-func (s *AssetPricesService) HasAnyPrice(c core.Context, uid int64, asset string) (bool, error) {
+// GetLatestAutoPriceDate returns the date (YYYY-MM-DD) of the newest automatically fetched price of the asset, or an empty string if there is none
+func (s *AssetPricesService) GetLatestAutoPriceDate(c core.Context, uid int64, asset string) (string, error) {
 	if uid <= 0 {
-		return false, errs.ErrUserIdInvalid
+		return "", errs.ErrUserIdInvalid
 	}
 
-	count, err := s.UserDataDB(uid).NewSession(c).Where("uid=? AND asset=?", uid, asset).Count(&models.AssetPrice{})
+	var prices []*models.AssetPrice
+	err := s.UserDataDB(uid).NewSession(c).Where("uid=? AND asset=? AND source=?", uid, asset, string(models.ASSET_PRICE_SOURCE_AUTO)).OrderBy("date desc").Limit(1).Find(&prices)
 
-	return count > 0, err
+	if err != nil || len(prices) < 1 {
+		return "", err
+	}
+
+	return prices[0].Date, nil
 }
 
 // SaveManualPrice inserts or replaces the price of an asset on a date, the price becomes a manual one
