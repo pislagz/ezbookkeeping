@@ -102,6 +102,10 @@ func (p *MapImageProxy) mapImageProxyHandler(c *core.WebContext, fn func(c *core
 	mapProvider := strings.Replace(c.Query("provider"), "-", "_", -1)
 	targetUrl := ""
 
+	if p.CurrentConfig().OfflineMode {
+		return nil, errs.ErrMapProviderNotCurrent
+	}
+
 	if mapProvider != p.CurrentConfig().MapProvider {
 		return nil, errs.ErrMapProviderNotCurrent
 	}

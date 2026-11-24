@@ -5,7 +5,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/mayswind/ezbookkeeping/pkg/core"
 	"github.com/mayswind/ezbookkeeping/pkg/models"
+	"github.com/mayswind/ezbookkeeping/pkg/settings"
 )
 
 func newTestResponse(baseCurrency string, rates map[string]string) *models.LatestExchangeRateResponse {
@@ -80,4 +82,32 @@ func TestMergeAssetPricesToExchangeRates_ReplacesAssetRatesFromDataSource(t *tes
 	assert.True(t, ok)
 	assert.Equal(t, "0.002", rate)
 	assert.Equal(t, 2, len(merged.ExchangeRates))
+}
+
+type failingExchangeRatesProvider struct{ t *testing.T }
+
+func (p *failingExchangeRatesProvider) GetLatestExchangeRates(c core.Context, uid int64, currentConfig *settings.Config) (*models.LatestExchangeRateResponse, error) {
+	p.t.Fatal("the online exchange rates provider must not be used in offline mode")
+	return nil, nil
+}
+
+func TestSelectProvider_OfflineModeNeverUsesOnlineProvider(t *testing.T) {
+	online := &failingExchangeRatesProvider{t: t}
+	container := &ExchangeRatesDataProviderContainer{current: online}
+	c := core.NewNullContext()
+
+	// default behaviour is unchanged
+	assert.Same(t, online, container.selectProvider(c, 1, &settings.Config{OfflineMode: false}))
+	assert.Same(t, online, container.selectProvider(c, 1, nil))
+
+	// offline: a local provider is used, it is not the online one
+	selected := container.selectProvider(c, 1, &settings.Config{OfflineMode: true})
+	assert.NotSame(t, online, selected)
+	_, isLocal := selected.(*UserCustomExchangeRatesDataProvider)
+	assert.True(t, isLocal)
+
+	// offline with the user custom data source keeps the same provider
+	local := newUserCustomExchangeRatesDataProvider()
+	container = &ExchangeRatesDataProviderContainer{current: local}
+	assert.Same(t, local, container.selectProvider(c, 1, &settings.Config{OfflineMode: true}))
 }
