@@ -1537,6 +1537,7 @@ func (a *TransactionsApi) TransactionModifyHandler(c *core.WebContext) (any, *er
 		AccountId:         transactionModifyReq.SourceAccountId,
 		Amount:            transactionModifyReq.SourceAmount,
 		HideAmount:        transactionModifyReq.HideAmount,
+		TimeUnknown:       transactionModifyReq.TimeUnknown,
 		Comment:           transactionModifyReq.Comment,
 	}
 
@@ -1559,6 +1560,7 @@ func (a *TransactionsApi) TransactionModifyHandler(c *core.WebContext) (any, *er
 		(newTransaction.Type != models.TRANSACTION_DB_TYPE_TRANSFER_OUT || newTransaction.RelatedAccountId == transaction.RelatedAccountId) &&
 		(newTransaction.Type != models.TRANSACTION_DB_TYPE_TRANSFER_OUT || newTransaction.RelatedAccountAmount == transaction.RelatedAccountAmount) &&
 		newTransaction.HideAmount == transaction.HideAmount &&
+		newTransaction.TimeUnknown == transaction.TimeUnknown &&
 		newTransaction.Comment == transaction.Comment &&
 		newTransaction.GeoLongitude == transaction.GeoLongitude &&
 		newTransaction.GeoLatitude == transaction.GeoLatitude &&
@@ -3469,6 +3471,7 @@ func (a *TransactionsApi) createNewTransactionModel(uid int64, transactionCreate
 		AccountId:         transactionCreateReq.SourceAccountId,
 		Amount:            transactionCreateReq.SourceAmount,
 		HideAmount:        transactionCreateReq.HideAmount,
+		TimeUnknown:       transactionCreateReq.TimeUnknown,
 		Comment:           transactionCreateReq.Comment,
 		CreatedIp:         clientIp,
 	}

@@ -85,7 +85,7 @@ type Account struct {
 	Icon            int64           `xorm:"NOT NULL"`
 	IconType        core.IconType
 	Color           string         `xorm:"VARCHAR(6) NOT NULL"`
-	Currency        string         `xorm:"VARCHAR(3) NOT NULL"`
+	Currency        string         `xorm:"VARCHAR(10) NOT NULL"`
 	Balance         int64          `xorm:"NOT NULL"`
 	Comment         string         `xorm:"VARCHAR(255) NOT NULL"`
 	Extend          *AccountExtend `xorm:"BLOB"`
@@ -110,7 +110,7 @@ type AccountCreateRequest struct {
 	Icon                    int64                   `json:"icon,string" binding:"required,min=1"`
 	IconType                core.IconType           `json:"iconType" binding:"min=0,max=1"`
 	Color                   string                  `json:"color" binding:"required,len=6,validHexRGBColor"`
-	Currency                string                  `json:"currency" binding:"required,len=3,validCurrency"`
+	Currency                string                  `json:"currency" binding:"required,min=3,max=10,validAssetOrCurrency"`
 	Balance                 string                  `json:"balance" binding:"validTransactionAmount"`
 	BalanceTime             int64                   `json:"balanceTime"`
 	Comment                 string                  `json:"comment" binding:"max=255"`
@@ -128,7 +128,7 @@ type AccountModifyRequest struct {
 	Icon                    int64                   `json:"icon,string" binding:"min=1"`
 	IconType                core.IconType           `json:"iconType" binding:"min=0,max=1"`
 	Color                   string                  `json:"color" binding:"required,len=6,validHexRGBColor"`
-	Currency                *string                 `json:"currency" binding:"omitempty,len=3,validCurrency"`
+	Currency                *string                 `json:"currency" binding:"omitempty,min=3,max=10,validAssetOrCurrency"`
 	Balance                 *string                 `json:"balance" binding:"omitempty,validTransactionAmount"`
 	BalanceTime             *int64                  `json:"balanceTime" binding:"omitempty"`
 	LastReconciledTime      *int64                  `json:"lastReconciledTime" binding:"omitempty"`

@@ -2,11 +2,15 @@ package exchangerates
 
 import (
 	"crypto/tls"
+	"sort"
 
 	"github.com/mayswind/ezbookkeeping/pkg/core"
 	"github.com/mayswind/ezbookkeeping/pkg/errs"
+	"github.com/mayswind/ezbookkeeping/pkg/log"
 	"github.com/mayswind/ezbookkeeping/pkg/models"
+	"github.com/mayswind/ezbookkeeping/pkg/services"
 	"github.com/mayswind/ezbookkeeping/pkg/settings"
+	"github.com/mayswind/ezbookkeeping/pkg/utils"
 )
 
 // ExchangeRatesDataProviderContainer contains the current exchange rates data provider
@@ -95,5 +99,92 @@ func (e *ExchangeRatesDataProviderContainer) GetLatestExchangeRates(c core.Conte
 		return nil, errs.ErrInvalidExchangeRatesDataSource
 	}
 
-	return e.current.GetLatestExchangeRates(c, uid, currentConfig)
+	response, err := e.current.GetLatestExchangeRates(c, uid, currentConfig)
+
+	if err != nil || response == nil || uid <= 0 {
+		return response, err
+	}
+
+	return e.appendAssetExchangeRates(c, uid, response), nil
+}
+
+// appendAssetExchangeRates adds the rates of assets (precious metals and crypto currencies) to the exchange rates response of any data source.
+//
+// Assets have no rates in the data sources, so the user enters a price (in the user's default currency per one gram or one coin) which
+// is stored in the user custom exchange rate table. The price is converted to the same format as the rates of the data source
+// (units of the asset per one unit of the response base currency), so the client does not need to know where a rate comes from.
+//
+// HOOK for dated asset price history (price history table + auto-fetch): replace the call of GetAllCustomExchangeRatesByUid in
+// this function by "latest price of every asset on or before today", the rest of the function stays unchanged.
+func (e *ExchangeRatesDataProviderContainer) appendAssetExchangeRates(c core.Context, uid int64, response *models.LatestExchangeRateResponse) *models.LatestExchangeRateResponse {
+	user, err := services.Users.GetUserById(c, uid)
+
+	if err != nil {
+		log.Warnf(c, "[exchange_rates_data_provider_container.appendAssetExchangeRates] failed to get user \"uid:%d\", because %s", uid, err.Error())
+		return response
+	}
+
+	customRates, err := services.UserCustomExchangeRates.GetAllCustomExchangeRatesByUid(c, uid)
+
+	if err != nil {
+		log.Warnf(c, "[exchange_rates_data_provider_container.appendAssetExchangeRates] failed to get asset prices for user \"uid:%d\", because %s", uid, err.Error())
+		return response
+	}
+
+	prices := make(map[string]float64)
+
+	for _, customRate := range customRates {
+		if core.IsAsset(customRate.Currency) {
+			prices[customRate.Currency] = customRate.ToAssetPrice()
+		}
+	}
+
+	if len(prices) < 1 {
+		return response
+	}
+
+	defaultCurrencyRate := float64(0)
+
+	if user.DefaultCurrency == response.BaseCurrency {
+		defaultCurrencyRate = 1
+	}
+
+	for _, exchangeRate := range response.ExchangeRates {
+		if exchangeRate.Currency == user.DefaultCurrency {
+			if rate, err := utils.StringToFloat64(exchangeRate.Rate); err == nil {
+				defaultCurrencyRate = rate
+			}
+
+			break
+		}
+	}
+
+	if defaultCurrencyRate <= 0 {
+		return response
+	}
+
+	newRates := make(models.LatestExchangeRateSlice, 0, len(response.ExchangeRates)+len(prices))
+
+	for _, exchangeRate := range response.ExchangeRates {
+		if !core.IsAsset(exchangeRate.Currency) {
+			newRates = append(newRates, exchangeRate)
+		}
+	}
+
+	for _, asset := range core.AllAssets {
+		if price, exists := prices[asset.Code]; exists && price > 0 {
+			newRates = append(newRates, &models.LatestExchangeRate{
+				Currency: asset.Code,
+				Rate:     utils.Float64ToString(defaultCurrencyRate / price),
+			})
+		}
+	}
+
+	sort.Sort(newRates)
+
+	// copy the response to avoid modifying cached data of the data source
+	newResponse := *response
+	newResponse.ExchangeRates = newRates
+
+	return &newResponse
 }

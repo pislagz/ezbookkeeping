@@ -1051,6 +1051,10 @@ func (s *TransactionService) ModifyTransaction(c core.Context, transaction *mode
 			updateCols = append(updateCols, "hide_amount")
 		}
 
+		if transaction.TimeUnknown != oldTransaction.TimeUnknown {
+			updateCols = append(updateCols, "time_unknown")
+		}
+
 		if transaction.Comment != oldTransaction.Comment {
 			updateCols = append(updateCols, "comment")
 		}
@@ -2172,6 +2176,7 @@ func (s *TransactionService) GetRelatedTransferTransaction(originalTransaction *
 		RelatedId:            originalTransaction.TransactionId,
 		RelatedAccountId:     originalTransaction.AccountId,
 		RelatedAccountAmount: originalTransaction.Amount,
+		TimeUnknown:          originalTransaction.TimeUnknown,
 		Comment:              originalTransaction.Comment,
 		GeoLongitude:         originalTransaction.GeoLongitude,
 		GeoLatitude:          originalTransaction.GeoLatitude,

@@ -39,3 +39,22 @@ func TestInvalidCurrency(t *testing.T) {
 	err = validate.Var("-", "validCurrency")
 	assert.NotNil(t, err)
 }
+
+func TestValidAssetOrCurrency(t *testing.T) {
+	validate := validator.New()
+	err := validate.RegisterValidation("validAssetOrCurrency", ValidAssetOrCurrency)
+	assert.Nil(t, err)
+
+	for _, code := range []string{"PLN", "XAU", "XAG", "BTC", "USDT", "---"} {
+		assert.Nil(t, validate.Var(code, "validAssetOrCurrency"), code)
+	}
+
+	for _, code := range []string{"XXX", "FOO", "", "btc"} {
+		assert.NotNil(t, validate.Var(code, "validAssetOrCurrency"), code)
+	}
+
+	// default currency validator must keep rejecting assets
+	err = validate.RegisterValidation("validCurrency", ValidCurrency)
+	assert.Nil(t, err)
+	assert.NotNil(t, validate.Var("BTC", "validCurrency"))
+}

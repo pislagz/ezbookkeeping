@@ -138,10 +138,11 @@ type Transaction struct {
 	RelatedAccountId     int64             `xorm:"NOT NULL"`
 	RelatedAccountAmount int64             `xorm:"NOT NULL"`
 	HideAmount           bool              `xorm:"NOT NULL"`
-	Comment              string            `xorm:"VARCHAR(255) NOT NULL"`
-	GeoLongitude         float64           `xorm:"INDEX(IDX_transaction_uid_deleted_time_longitude_latitude)"`
-	GeoLatitude          float64           `xorm:"INDEX(IDX_transaction_uid_deleted_time_longitude_latitude)"`
-	CreatedIp            string            `xorm:"VARCHAR(39)"`
+	TimeUnknown          bool
+	Comment              string  `xorm:"VARCHAR(255) NOT NULL"`
+	GeoLongitude         float64 `xorm:"INDEX(IDX_transaction_uid_deleted_time_longitude_latitude)"`
+	GeoLatitude          float64 `xorm:"INDEX(IDX_transaction_uid_deleted_time_longitude_latitude)"`
+	CreatedIp            string  `xorm:"VARCHAR(39)"`
 	ScheduledCreated     bool
 	CreatedUnixTime      int64
 	UpdatedUnixTime      int64
@@ -172,6 +173,7 @@ type TransactionCreateRequest struct {
 	SourceAmount         int64                          `json:"sourceAmount" binding:"validTransactionAmount"`
 	DestinationAmount    int64                          `json:"destinationAmount" binding:"validTransactionAmount"`
 	HideAmount           bool                           `json:"hideAmount"`
+	TimeUnknown          bool                           `json:"timeUnknown"`
 	TagIds               []string                       `json:"tagIds"`
 	PictureIds           []string                       `json:"pictureIds"`
 	Comment              string                         `json:"comment" binding:"max=255"`
@@ -191,6 +193,7 @@ type TransactionModifyRequest struct {
 	SourceAmount         int64                          `json:"sourceAmount" binding:"validTransactionAmount"`
 	DestinationAmount    int64                          `json:"destinationAmount" binding:"validTransactionAmount"`
 	HideAmount           bool                           `json:"hideAmount"`
+	TimeUnknown          bool                           `json:"timeUnknown"`
 	TagIds               []string                       `json:"tagIds"`
 	PictureIds           []string                       `json:"pictureIds"`
 	Comment              string                         `json:"comment" binding:"max=255"`
@@ -199,7 +202,7 @@ type TransactionModifyRequest struct {
 
 // TransactionCreateBatchRequest represents all parameters of transaction creation batch request
 type TransactionCreateBatchRequest struct {
-	Transactions    []*TransactionCreateRequest `json:"transactions"`
+	Transactions []*TransactionCreateRequest `json:"transactions"`
 }
 
 // TransactionImportRequest represents all parameters of transaction import request
@@ -438,6 +441,7 @@ type TransactionInfoResponse struct {
 	SourceAmount         int64                                    `json:"sourceAmount"`
 	DestinationAmount    *int64                                   `json:"destinationAmount,omitempty"`
 	HideAmount           bool                                     `json:"hideAmount"`
+	TimeUnknown          bool                                     `json:"timeUnknown"`
 	TagIds               []string                                 `json:"tagIds"`
 	Tags                 []*TransactionTagInfoResponse            `json:"tags,omitempty"`
 	Pictures             TransactionPictureInfoBasicResponseSlice `json:"pictures,omitempty"`
@@ -688,6 +692,7 @@ func (t *Transaction) ToTransactionInfoResponse(tagIds []int64, editable bool) *
 		SourceAmount:         sourceAmount,
 		DestinationAmount:    destinationAmount,
 		HideAmount:           t.HideAmount,
+		TimeUnknown:          t.TimeUnknown,
 		TagIds:               utils.Int64ArrayToStringArray(tagIds),
 		Comment:              t.Comment,
 		GeoLocation:          geoLocation,

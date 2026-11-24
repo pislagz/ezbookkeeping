@@ -65,6 +65,22 @@ func (s *UserCustomExchangeRatesService) UpdateCustomExchangeRate(c core.Context
 			}
 		}
 
+		if core.IsAsset(currency) {
+			// asset price rows do not depend on the default currency row (see models.UserCustomExchangeRate.ToAssetPrice)
+			newCustomExchangeRate, err = models.CreateUserAssetPrice(uid, currency, rate)
+
+			if err != nil {
+				return err
+			}
+
+			newCustomExchangeRate.CreatedUnixTime = now
+			newCustomExchangeRate.UpdatedUnixTime = now
+			newCustomExchangeRate.DeletedUnixTime = 0
+			_, err = sess.Insert(newCustomExchangeRate)
+
+			return err
+		}
+
 		if currency != defaultCurrency {
 			has, err := sess.Where("uid=? AND deleted_unix_time=? AND currency=?", uid, 0, defaultCurrency).Get(defaultCurrencyExchangeRate)
 

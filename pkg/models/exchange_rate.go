@@ -1,8 +1,11 @@
 package models
 
 import (
+	"math/big"
 	"strings"
 
+	"github.com/mayswind/ezbookkeeping/pkg/core"
+	"github.com/mayswind/ezbookkeeping/pkg/errs"
 	"github.com/mayswind/ezbookkeeping/pkg/utils"
 )
 
@@ -12,7 +15,7 @@ const UserCustomExchangeRateFactorInDatabase = int64(100000000)
 type UserCustomExchangeRate struct {
 	Uid             int64  `xorm:"PK NOT NULL"`
 	DeletedUnixTime int64  `xorm:"PK NOT NULL"`
-	Currency        string `xorm:"PK VARCHAR(3) NOT NULL"`
+	Currency        string `xorm:"PK VARCHAR(10) NOT NULL"`
 	Rate            int64  `xorm:"NOT NULL"`
 	CreatedUnixTime int64
 	UpdatedUnixTime int64
@@ -20,13 +23,13 @@ type UserCustomExchangeRate struct {
 
 // UserCustomExchangeRateUpdateRequest represents all parameters of user custom exchange rate data updating request
 type UserCustomExchangeRateUpdateRequest struct {
-	Currency string `json:"currency" binding:"required,len=3,validCurrency"`
+	Currency string `json:"currency" binding:"required,min=3,max=10,validAssetOrCurrency"`
 	Rate     string `json:"rate"`
 }
 
 // UserCustomExchangeRateDeleteRequest represents all parameters of user custom exchange rate data deleting request
 type UserCustomExchangeRateDeleteRequest struct {
-	Currency string `json:"currency" binding:"required,len=3,validCurrency"`
+	Currency string `json:"currency" binding:"required,min=3,max=10,validAssetOrCurrency"`
 }
 
 // UserCustomExchangeRateUpdateResponse represents a view-object of the result of updating user custom exchange rate data
@@ -62,6 +65,35 @@ func (r *UserCustomExchangeRate) ToLatestExchangeRate(baseCurrencyRate int64) *L
 		Currency: r.Currency,
 		Rate:     utils.Float64ToString(rate),
 	}
+}
+
+// ToAssetPrice returns the price (in the user's default currency per one whole unit, i.e. one gram or one coin) of an asset row
+// For assets (precious metals and crypto currencies) the Rate column stores the price multiplied by UserCustomExchangeRateFactorInDatabase,
+// instead of the rate relative to the default currency (which would lose precision for expensive coins like BTC)
+func (r *UserCustomExchangeRate) ToAssetPrice() float64 {
+	return float64(r.Rate) / float64(UserCustomExchangeRateFactorInDatabase)
+}
+
+// CreateUserAssetPrice returns a user custom exchange rate database model for an asset according to the price in default currency per one whole unit
+func CreateUserAssetPrice(uid int64, currency string, price string) (*UserCustomExchangeRate, error) {
+	value, ok := new(big.Rat).SetString(price)
+
+	if !core.IsAsset(currency) || !ok || value.Sign() <= 0 {
+		return nil, errs.ErrNumberInvalid
+	}
+
+	value.Mul(value, new(big.Rat).SetInt64(UserCustomExchangeRateFactorInDatabase))
+	scaled := new(big.Int).Quo(value.Num(), value.Denom())
+
+	if !scaled.IsInt64() || scaled.Sign() <= 0 {
+		return nil, errs.ErrNumberInvalid
+	}
+
+	return &UserCustomExchangeRate{
+		Uid:      uid,
+		Currency: currency,
+		Rate:     scaled.Int64(),
+	}, nil
 }
 
 // ToUserCustomExchangeRateUpdateResponse returns a view-object of the result of updating user custom exchange rate data according to database model

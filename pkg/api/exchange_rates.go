@@ -8,6 +8,7 @@ import (
 	"github.com/mayswind/ezbookkeeping/pkg/models"
 	"github.com/mayswind/ezbookkeeping/pkg/services"
 	"github.com/mayswind/ezbookkeeping/pkg/settings"
+	"github.com/mayswind/ezbookkeeping/pkg/utils"
 )
 
 // ExchangeRatesApi represents exchange rate api
@@ -69,6 +70,18 @@ func (a *ExchangeRatesApi) UserCustomExchangeRateUpdateHandler(c *core.WebContex
 	}
 
 	log.Infof(c, "[exchange_rates.UserCustomExchangeRateUpdateHandler] user \"uid:%d\" has updated user custom exchange rate \"currency:%s\" successfully", uid, customExchangeRateUpdateReq.Currency)
+
+	if core.IsAsset(customExchangeRateUpdateReq.Currency) {
+		// for assets the response contains the price in default currency (not a rate), the client should reload latest exchange rates
+		return &models.UserCustomExchangeRateUpdateResponse{
+			LatestExchangeRate: models.LatestExchangeRate{
+				Currency: newCustomExchangeRate.Currency,
+				Rate:     utils.Float64ToString(newCustomExchangeRate.ToAssetPrice()),
+			},
+			UpdateTime: newCustomExchangeRate.UpdatedUnixTime,
+		}, nil
+	}
+
 	return newCustomExchangeRate.ToUserCustomExchangeRateUpdateResponse(defaultCurrencyExchangeRate.Rate), nil
 }
 

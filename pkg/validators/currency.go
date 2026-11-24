@@ -184,3 +184,12 @@ func ValidCurrency(fl validator.FieldLevel) bool {
 
 	return false
 }
+
+// ValidAssetOrCurrency returns whether the given currency is a valid ISO 4217 currency or a supported asset (precious metal or crypto currency)
+func ValidAssetOrCurrency(fl validator.FieldLevel) bool {
+	if value, ok := fl.Field().Interface().(string); ok {
+		return core.IsAsset(value) || ValidCurrency(fl)
+	}
+
+	return false
+}

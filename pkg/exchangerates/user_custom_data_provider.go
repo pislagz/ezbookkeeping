@@ -43,6 +43,10 @@ func (e *UserCustomExchangeRatesDataProvider) GetLatestExchangeRates(c core.Cont
 	for i := 0; i < len(customExchangeRates); i++ {
 		customExchangeRate := customExchangeRates[i]
 
+		if core.IsAsset(customExchangeRate.Currency) {
+			continue // asset prices are added to the response of every data source by the container
+		}
+
 		if customExchangeRate.Currency == user.DefaultCurrency {
 			baseCurrencyRate = customExchangeRate.Rate
 			hasDefaultCurrencyRate = true
@@ -55,6 +59,10 @@ func (e *UserCustomExchangeRatesDataProvider) GetLatestExchangeRates(c core.Cont
 
 	for i := 0; i < len(customExchangeRates); i++ {
 		customExchangeRate := customExchangeRates[i]
+
+		if core.IsAsset(customExchangeRate.Currency) {
+			continue
+		}
 
 		if _, exists := validators.AllCurrencyNames[customExchangeRate.Currency]; !exists {
 			continue
