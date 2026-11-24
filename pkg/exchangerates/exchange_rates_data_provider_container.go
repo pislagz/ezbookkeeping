@@ -143,14 +143,19 @@ func (e *ExchangeRatesDataProviderContainer) appendAssetExchangeRates(c core.Con
 		return response
 	}
 
+	return mergeAssetPricesToExchangeRates(response, user.DefaultCurrency, prices)
+}
+
+// mergeAssetPricesToExchangeRates returns a copy of the response which contains the rates of assets calculated from the prices (in the default currency per one unit)
+func mergeAssetPricesToExchangeRates(response *models.LatestExchangeRateResponse, defaultCurrency string, prices map[string]float64) *models.LatestExchangeRateResponse {
 	defaultCurrencyRate := float64(0)
 
-	if user.DefaultCurrency == response.BaseCurrency {
+	if defaultCurrency == response.BaseCurrency {
 		defaultCurrencyRate = 1
 	}
 
 	for _, exchangeRate := range response.ExchangeRates {
-		if exchangeRate.Currency == user.DefaultCurrency {
+		if exchangeRate.Currency == defaultCurrency {
 			if rate, err := utils.StringToFloat64(exchangeRate.Rate); err == nil {
 				defaultCurrencyRate = rate
 			}

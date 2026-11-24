@@ -13,7 +13,7 @@ import {
     storedAmountToViewAmount,
     viewAmountToStoredAmount
 } from '@/lib/asset.ts';
-import { formatAmount, parseAmount, parseBigDecimal } from '@/lib/numeral.ts';
+import { formatAmount, getExchangedAmountByRate, parseAmount, parseBigDecimal } from '@/lib/numeral.ts';
 
 function options(currency: string | undefined, metalUnit?: string, forInput: boolean = false): NumberFormatOptions {
     const spec = getAmountViewSpec(currency, metalUnit, forInput);
@@ -152,5 +152,31 @@ describe('metals in grams and troy ounces', () => {
         const btcSpec = getAmountViewSpec('BTC', 'oz');
         expect(btcSpec.unit).toBeUndefined();
         expect(storedAmountToViewAmount(12345, btcSpec, 'BTC')).toBe(12345);
+    });
+});
+
+describe('getExchangedAmountByRate with asset scales', () => {
+    // rates are units of the currency per one unit of the base currency (PLN)
+    it('should convert BTC (8 decimals) to PLN (2 decimals)', () => {
+        // 0.00123456 BTC at 400000 PLN per BTC = 493.824 PLN = 49382.4 stored
+        const stored = parseBigDecimal(123456);
+        const converted = getExchangedAmountByRate(stored, '0.0000025', '1', 'BTC', 'PLN');
+        expect(converted?.toDoubleNumber()).toBeCloseTo(49382.4, 6);
+    });
+
+    it('should convert gold (grams, 2 decimals) to PLN', () => {
+        // 31.10 g at 500 PLN per gram = 15550 PLN = 1555000 stored
+        const converted = getExchangedAmountByRate(parseBigDecimal(3110), '0.002', '1', 'XAU', 'PLN');
+        expect(converted?.toDoubleNumber()).toBeCloseTo(1555000, 6);
+    });
+
+    it('should convert between PLN and BTC and keep normal currencies unchanged', () => {
+        // 1000 PLN = 100000 stored = 0.0025 BTC = 250000 stored
+        const converted = getExchangedAmountByRate(parseBigDecimal(100000), '1', '0.0000025', 'PLN', 'BTC');
+        expect(converted?.toDoubleNumber()).toBeCloseTo(250000, 4);
+
+        const usd = getExchangedAmountByRate(parseBigDecimal(100), '1', '0.25', 'PLN', 'USD');
+        expect(usd?.toDoubleNumber()).toBeCloseTo(25, 8);
+        expect(getExchangedAmountByRate(parseBigDecimal(100), '1', '0.25')?.toDoubleNumber()).toBeCloseTo(25, 8);
     });
 });
