@@ -373,7 +373,10 @@ func TestExchangeRatesApiLatestExchangeRateHandler_CentralBankOfUzbekistanDataSo
 }
 
 func executeLatestExchangeRateHandler(t *testing.T, dataSourceType string) *models.LatestExchangeRateResponse {
-	if os.Getenv("BUILD_PIPELINE") == "1" && os.Getenv("CHECK_3RD_API") != "1" {
+	// Fork: these tests call live third-party bank APIs. They are flaky (403s, timeouts)
+	// and break offline/local Docker builds, so they only run when explicitly enabled.
+	if os.Getenv("CHECK_3RD_API") != "1" {
+		t.Skip("skipping live third-party exchange rate API test (set CHECK_3RD_API=1 to enable)")
 		return nil
 	}
 
