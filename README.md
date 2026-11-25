@@ -52,7 +52,7 @@ Then open `http://<host>:8080`. Notes:
       -e TZ=Europe/Warsaw
 
   The default currency is a per-user setting in the app (Settings → user profile), it is not a server setting. To use a full config file instead: mount it and pass `-e EBK_CONF_PATH=/ezbookkeeping/conf/my.ini`.
-- Build memory: the frontend stage (`vue-tsc` + Vite) needs about 3-4 GB of RAM. On small machines pass a larger Node heap, e.g. `docker build --build-arg BUILD_NODE_OPTIONS=--max-old-space-size=4096 -t ezbookkeeping-fork .` (and add swap if the build is killed). The backend stage downloads the Go modules and runs the Go unit tests; add `--build-arg SKIP_TESTS=<regex>` only if a test needs something your build machine does not have. The build needs internet access (npm and Go modules), the running container does not.
+- Build memory: the frontend stage (`vue-tsc` + Vite) needs about 3-4 GB of RAM. The Dockerfile now defaults the Node heap to 4 GB (`BUILD_NODE_OPTIONS=--max-old-space-size=4096`); override it with `--build-arg BUILD_NODE_OPTIONS=...` if needed. On Docker Desktop give the VM at least 6 GB of memory (Settings > Resources), otherwise the build is killed (exit 137). The backend stage downloads the Go modules and runs the Go unit tests; add `--build-arg SKIP_TESTS=<regex>` only if a test needs something your build machine does not have. The build needs internet access (npm and Go modules), the running container does not.
 
 ## Features
 - **Open Source & Self-Hosted**
