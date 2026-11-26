@@ -22,6 +22,8 @@ import {
 
 import { isDefined, isArray, arrayItemToObjectField } from '@/lib/common.ts';
 import { BIG_DECIMAL_ZERO, isBigDecimal, parseBigDecimal } from '@/lib/numeral.ts';
+import { isAssetCurrency } from '@/lib/asset.ts';
+import { AssetBreakdownCollector, getTotalAmountSuffix } from '@/lib/asset_totals.ts';
 import { getCategorizedAccountsMap, getAllFilteredAccountsBalance } from '@/lib/account.ts';
 import services from '@/lib/services.ts';
 import logger from '@/lib/logger.ts';
@@ -475,6 +477,18 @@ export const useAccountsStore = defineStore('accounts', () => {
         return null;
     }
 
+    function getTotalWithSuffix(value: BigDecimal, hasUnCalculatedAmount: boolean, assetCollector: AssetBreakdownCollector): BigDecimal | BigDecimalWithSuffix {
+        if (!hasUnCalculatedAmount && !assetCollector.hasAssets) {
+            return value;
+        }
+
+        return {
+            value: value,
+            suffix: getTotalAmountSuffix(hasUnCalculatedAmount, assetCollector.hasAssets),
+            assetItems: assetCollector.items
+        };
+    }
+
     function getNetAssets(showAccountBalance: boolean, excludedAccountIds: Record<string, boolean>): BigDecimal | HiddenAmount | BigDecimalWithSuffix {
         if (!showAccountBalance) {
             return DISPLAY_HIDDEN_AMOUNT;
@@ -485,12 +499,25 @@ export const useAccountsStore = defineStore('accounts', () => {
         );
         let netAssets: BigDecimal = BIG_DECIMAL_ZERO;
         let hasUnCalculatedAmount = false;
+        const assetCollector = new AssetBreakdownCollector();
 
         for (const accountBalance of accountsBalance) {
             if (accountBalance.currency === userStore.currentUserDefaultCurrency) {
                 netAssets = netAssets.add(accountBalance.balance);
             } else {
                 const balance = exchangeRatesStore.getExchangedAmount(accountBalance.balance, accountBalance.currency, userStore.currentUserDefaultCurrency);
+
+                if (isAssetCurrency(accountBalance.currency)) {
+                    // an asset without any price is excluded (and listed in the breakdown), it does not make the total "incomplete" like an ordinary currency
+                    const converted = balance ? balance.truncate() : null;
+                    assetCollector.add(accountBalance.currency, accountBalance.balance, converted ? converted : null, exchangeRatesStore.getAssetLatestPrice(accountBalance.currency));
+
+                    if (converted) {
+                        netAssets = netAssets.add(converted);
+                    }
+
+                    continue;
+                }
 
                 if (!balance) {
                     hasUnCalculatedAmount = true;
@@ -501,14 +528,7 @@ export const useAccountsStore = defineStore('accounts', () => {
             }
         }
 
-        if (hasUnCalculatedAmount) {
-            return {
-                value: netAssets,
-                suffix: INCOMPLETE_AMOUNT_SUFFIX
-            };
-        } else {
-            return netAssets;
-        }
+        return getTotalWithSuffix(netAssets, hasUnCalculatedAmount, assetCollector);
     }
 
     function getTotalAssets(showAccountBalance: boolean, excludedAccountIds: Record<string, boolean>): BigDecimal | HiddenAmount | BigDecimalWithSuffix {
@@ -521,12 +541,25 @@ export const useAccountsStore = defineStore('accounts', () => {
         );
         let totalAssets: BigDecimal = BIG_DECIMAL_ZERO;
         let hasUnCalculatedAmount = false;
+        const assetCollector = new AssetBreakdownCollector();
 
         for (const accountBalance of accountsBalance) {
             if (accountBalance.currency === userStore.currentUserDefaultCurrency) {
                 totalAssets = totalAssets.add(accountBalance.balance);
             } else {
                 const balance = exchangeRatesStore.getExchangedAmount(accountBalance.balance, accountBalance.currency, userStore.currentUserDefaultCurrency);
+
+                if (isAssetCurrency(accountBalance.currency)) {
+                    // an asset without any price is excluded (and listed in the breakdown), it does not make the total "incomplete" like an ordinary currency
+                    const converted = balance ? balance.truncate() : null;
+                    assetCollector.add(accountBalance.currency, accountBalance.balance, converted ? converted : null, exchangeRatesStore.getAssetLatestPrice(accountBalance.currency));
+
+                    if (converted) {
+                        totalAssets = totalAssets.add(converted);
+                    }
+
+                    continue;
+                }
 
                 if (!balance) {
                     hasUnCalculatedAmount = true;
@@ -537,14 +570,7 @@ export const useAccountsStore = defineStore('accounts', () => {
             }
         }
 
-        if (hasUnCalculatedAmount) {
-            return {
-                value: totalAssets,
-                suffix: INCOMPLETE_AMOUNT_SUFFIX
-            };
-        } else {
-            return totalAssets;
-        }
+        return getTotalWithSuffix(totalAssets, hasUnCalculatedAmount, assetCollector);
     }
 
     function getTotalLiabilities(showAccountBalance: boolean, excludedAccountIds: Record<string, boolean>): BigDecimal | HiddenAmount | BigDecimalWithSuffix {
@@ -557,12 +583,25 @@ export const useAccountsStore = defineStore('accounts', () => {
         );
         let totalLiabilities: BigDecimal = BIG_DECIMAL_ZERO;
         let hasUnCalculatedAmount = false;
+        const assetCollector = new AssetBreakdownCollector();
 
         for (const accountBalance of accountsBalance) {
             if (accountBalance.currency === userStore.currentUserDefaultCurrency) {
                 totalLiabilities = totalLiabilities.subtract(accountBalance.balance);
             } else {
                 const balance = exchangeRatesStore.getExchangedAmount(accountBalance.balance, accountBalance.currency, userStore.currentUserDefaultCurrency);
+
+                if (isAssetCurrency(accountBalance.currency)) {
+                    // an asset without any price is excluded (and listed in the breakdown), it does not make the total "incomplete" like an ordinary currency
+                    const converted = balance ? balance.truncate() : null;
+                    assetCollector.add(accountBalance.currency, accountBalance.balance.negate(), converted ? converted.negate() : null, exchangeRatesStore.getAssetLatestPrice(accountBalance.currency));
+
+                    if (converted) {
+                        totalLiabilities = totalLiabilities.subtract(converted);
+                    }
+
+                    continue;
+                }
 
                 if (!balance) {
                     hasUnCalculatedAmount = true;
@@ -573,14 +612,7 @@ export const useAccountsStore = defineStore('accounts', () => {
             }
         }
 
-        if (hasUnCalculatedAmount) {
-            return {
-                value: totalLiabilities,
-                suffix: INCOMPLETE_AMOUNT_SUFFIX
-            };
-        } else {
-            return totalLiabilities;
-        }
+        return getTotalWithSuffix(totalLiabilities, hasUnCalculatedAmount, assetCollector);
     }
 
     function getAccountCategoryTotalBalance(showAccountBalance: boolean, accountCategory: AccountCategory, showAvailableCreditForCreditCard: boolean): BigDecimal | HiddenAmount | BigDecimalWithSuffix | undefined {
@@ -595,6 +627,7 @@ export const useAccountsStore = defineStore('accounts', () => {
         let hasUnCalculatedAmount = false;
         let hasUnCalculatedAvailableCredit = false;
         let hasCalculatedAvailableCredit = false;
+        const assetCollector = new AssetBreakdownCollector();
 
         for (const accountBalance of accountsBalance) {
             let balance: BigDecimal | null = null;
@@ -604,7 +637,18 @@ export const useAccountsStore = defineStore('accounts', () => {
             } else {
                 balance = exchangeRatesStore.getExchangedAmount(accountBalance.balance, accountBalance.currency, userStore.currentUserDefaultCurrency);
 
-                if (!balance) {
+                if (isAssetCurrency(accountBalance.currency)) {
+                    const converted = balance ? balance.truncate() : null;
+                    const sign = accountBalance.isLiability && !accountBalance.isAsset ? -1 : 1;
+                    assetCollector.add(accountBalance.currency, sign < 0 ? accountBalance.balance.negate() : accountBalance.balance,
+                        converted ? (sign < 0 ? converted.negate() : converted) : null, exchangeRatesStore.getAssetLatestPrice(accountBalance.currency));
+
+                    if (!converted) {
+                        continue;
+                    }
+
+                    balance = converted;
+                } else if (!balance) {
                     hasUnCalculatedAmount = true;
                     continue;
                 }
@@ -653,14 +697,7 @@ export const useAccountsStore = defineStore('accounts', () => {
                 return totalCreditCardAvailableCredit;
             }
         } else {
-            if (hasUnCalculatedAmount) {
-                return {
-                    value: totalBalance,
-                    suffix: INCOMPLETE_AMOUNT_SUFFIX
-                };
-            } else {
-                return totalBalance;
-            }
+            return getTotalWithSuffix(totalBalance, hasUnCalculatedAmount, assetCollector);
         }
     }
 

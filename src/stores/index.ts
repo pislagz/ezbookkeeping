@@ -64,6 +64,7 @@ export const useRootStore = defineStore('root', () => {
     function resetAllStates(resetUserInfoAndSettings: boolean): void {
         if (resetUserInfoAndSettings) {
             exchangeRatesStore.resetLatestExchangeRates();
+            exchangeRatesStore.resetLatestAssetPrices();
         }
 
         setNotificationContent(null);
@@ -477,6 +478,7 @@ export const useRootStore = defineStore('root', () => {
 
                 if (data.result.user && data.result.user.defaultCurrency !== userDefaultCurrency) {
                     exchangeRatesStore.resetLatestExchangeRates();
+                    exchangeRatesStore.resetLatestAssetPrices();
                 }
 
                 resolve(data.result);

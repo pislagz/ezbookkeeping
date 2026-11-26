@@ -10,8 +10,12 @@ import type { BigDecimal, HiddenAmount, BigDecimalWithSuffix } from '@/core/nume
 
 import { Account } from '@/models/account.ts';
 
+import { useAssetBreakdownBase, type AssetBreakdown } from '@/views/base/accounts/AssetBreakdownBase.ts';
+
 export function useAssetSummaryWidgetBase(scene: 'overview' | 'accountList') {
     const { formatAmountToLocalizedNumeralsWithCurrency } = useI18n();
+
+    const { getAssetBreakdown } = useAssetBreakdownBase();
 
     const settingsStore = useSettingsStore();
     const userStore = useUserStore();
@@ -66,6 +70,22 @@ export function useAssetSummaryWidgetBase(scene: 'overview' | 'accountList') {
         }
     });
 
+    function getRawTotals(): { netAssets: BigDecimal | HiddenAmount | BigDecimalWithSuffix, totalAssets: BigDecimal | HiddenAmount | BigDecimalWithSuffix, totalLiabilities: BigDecimal | HiddenAmount | BigDecimalWithSuffix } {
+        const show = scene === 'overview' ? showAmountInHomePage.value : showAccountBalance.value;
+        const excluded = scene === 'overview' ? settingsStore.appSettings.overviewAccountFilterInHomePage : settingsStore.appSettings.totalAmountExcludeAccountIds;
+
+        return {
+            netAssets: accountsStore.getNetAssets(show, excluded),
+            totalAssets: accountsStore.getTotalAssets(show, excluded),
+            totalLiabilities: accountsStore.getTotalLiabilities(show, excluded)
+        };
+    }
+
+    // the breakdown of the assets (precious metals / crypto) which are included in the totals, shown in a popover of the "*" marker
+    const netAssetsBreakdown = computed<AssetBreakdown | null>(() => getAssetBreakdown(getRawTotals().netAssets, defaultCurrency.value));
+    const totalAssetsBreakdown = computed<AssetBreakdown | null>(() => getAssetBreakdown(getRawTotals().totalAssets, defaultCurrency.value));
+    const totalLiabilitiesBreakdown = computed<AssetBreakdown | null>(() => getAssetBreakdown(getRawTotals().totalLiabilities, defaultCurrency.value));
+
     return {
         // computed states
         showAmountInHomePage,
@@ -74,6 +94,9 @@ export function useAssetSummaryWidgetBase(scene: 'overview' | 'accountList') {
         allAccounts,
         netAssets,
         totalAssets,
-        totalLiabilities
+        totalLiabilities,
+        netAssetsBreakdown,
+        totalAssetsBreakdown,
+        totalLiabilitiesBreakdown
     };
 }

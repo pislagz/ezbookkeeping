@@ -7,7 +7,7 @@
             </p>
             <p class="no-margin">
                 <span class="net-assets" v-if="loading">0.00 USD</span>
-                <span class="net-assets" v-else-if="!loading">{{ netAssets }}</span>
+                <span class="net-assets" v-else-if="!loading"><asset-breakdown-text :text="netAssets" :breakdown="netAssetsBreakdown" :popover-class="`asset-breakdown-net-${scene}`" /></span>
                 <f7-link class="display-inline-flex margin-inline-start-half" :style="iconStyle"
                          :aria-label="showAccountBalance ? tt('Hide Account Balance') : tt('Show Account Balance')"
                          @click="showAccountBalance = !showAccountBalance"
@@ -21,10 +21,10 @@
                 </small>
                 <small class="account-overview-info" v-else-if="!loading">
                     <span>{{ tt('Total assets') }}</span>
-                    <span>{{ totalAssets }}</span>
+                    <span><asset-breakdown-text :text="totalAssets" :breakdown="totalAssetsBreakdown" :popover-class="`asset-breakdown-assets-${scene}`" /></span>
                     <span>|</span>
                     <span>{{ tt('Total liabilities') }}</span>
-                    <span>{{ totalLiabilities }}</span>
+                    <span><asset-breakdown-text :text="totalLiabilities" :breakdown="totalLiabilitiesBreakdown" :popover-class="`asset-breakdown-liabilities-${scene}`" /></span>
                 </small>
             </p>
         </f7-card-header>
@@ -32,6 +32,8 @@
 </template>
 
 <script setup lang="ts">
+import AssetBreakdownText from '@/components/mobile/AssetBreakdownText.vue';
+
 import { computed } from 'vue';
 
 import { useI18n } from '@/locales/helpers.ts';
@@ -61,7 +63,10 @@ const {
     showAccountBalance,
     netAssets,
     totalAssets,
-    totalLiabilities
+    totalLiabilities,
+    netAssetsBreakdown,
+    totalAssetsBreakdown,
+    totalLiabilitiesBreakdown
 } = useAssetSummaryWidgetBase(props.scene);
 
 const environmentsStore = useEnvironmentsStore();

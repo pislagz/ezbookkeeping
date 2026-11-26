@@ -33,7 +33,7 @@ function tx(partial: Partial<AssetChartTransaction> & { id: string, date: string
         utcOffset: 0,
         sourceAccountId: 'g1',
         destinationAccountId: '0',
-        sourceAmount: 3110, // 31.10 g
+        sourceAmount: 31100000, // 31.10 g
         destinationAmount: 0,
         ...partial
     };
@@ -54,7 +54,7 @@ describe('units', () => {
         expect(getPricePerDisplayUnit(100, 'XAU', 'oz')).toBeCloseTo(100 * GRAMS_PER_TROY_OUNCE, 8);
         expect(getPricePerDisplayUnit(100, 'XAU', 'g')).toBe(100);
         expect(getPricePerDisplayUnit(100, 'BTC', 'oz')).toBe(100);
-        expect(getDisplayQuantity(3110.34768, 'XAU', 'oz')).toBeCloseTo(1, 6);
+        expect(getDisplayQuantity(31103476.8, 'XAU', 'oz')).toBeCloseTo(1, 6);
         expect(getDisplayQuantity(123456, 'BTC', 'oz')).toBe(0.00123456);
     });
 });
@@ -98,7 +98,7 @@ describe('markers', () => {
     });
 
     it('shows price and quantity per ounce', () => {
-        const [m] = build([tx({ id: 'a', date: '2025-01-03', sourceAmount: 311034 })], 'XAU', 'oz');
+        const [m] = build([tx({ id: 'a', date: '2025-01-03', sourceAmount: 3110340000 })], 'XAU', 'oz');
         expect(m!.price).toBeCloseTo(300 * GRAMS_PER_TROY_OUNCE, 6);
         expect(m!.quantity).toBeCloseTo(3110.34 / GRAMS_PER_TROY_OUNCE, 6);
         expect(m!.value).toBeCloseTo(3110.34 * 300, 4);
@@ -122,11 +122,11 @@ describe('markers', () => {
     it('treats transfers', () => {
         const markers = build([
             // between two gold accounts: no marker
-            tx({ id: 'internal', date: '2025-01-03', type: 4, sourceAccountId: 'g1', destinationAccountId: 'g2', destinationAmount: 3110 }),
+            tx({ id: 'internal', date: '2025-01-03', type: 4, sourceAccountId: 'g1', destinationAccountId: 'g2', destinationAmount: 31100000 }),
             // PLN -> gold: buy, value is the PLN amount
-            tx({ id: 'buy', date: '2025-01-03', type: 4, sourceAccountId: 'p1', destinationAccountId: 'g1', sourceAmount: 1000000, destinationAmount: 3110 }),
+            tx({ id: 'buy', date: '2025-01-03', type: 4, sourceAccountId: 'p1', destinationAccountId: 'g1', sourceAmount: 1000000, destinationAmount: 31100000 }),
             // gold -> EUR: sell valued at the series price
-            tx({ id: 'sell', date: '2025-01-06', type: 4, sourceAccountId: 'g2', destinationAccountId: 'e1', sourceAmount: 1000, destinationAmount: 5000 })
+            tx({ id: 'sell', date: '2025-01-06', type: 4, sourceAccountId: 'g2', destinationAccountId: 'e1', sourceAmount: 10000000, destinationAmount: 5000 })
         ]);
         expect(markers.map(m => [m.id, m.side])).toEqual([['buy', 'buy'], ['sell', 'sell']]);
         expect(markers[0]!.value).toBe(10000);
@@ -137,7 +137,7 @@ describe('markers', () => {
 
     it('uses the implied price when no price exists before the transaction', () => {
         const markers = build([
-            tx({ id: 'a', date: '2024-12-01', type: 4, sourceAccountId: 'p1', destinationAccountId: 'g1', sourceAmount: 620000, destinationAmount: 3110 }),
+            tx({ id: 'a', date: '2024-12-01', type: 4, sourceAccountId: 'p1', destinationAccountId: 'g1', sourceAmount: 620000, destinationAmount: 31100000 }),
             tx({ id: 'b', date: '2024-12-01', type: 2 })
         ]);
         expect(markers).toHaveLength(1);

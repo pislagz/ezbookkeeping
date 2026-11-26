@@ -1,6 +1,7 @@
 package core
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,8 @@ func TestAllAssets_CodesAreUniqueAndScaleFitsInt64(t *testing.T) {
 func TestGetAmountScale(t *testing.T) {
 	assert.Equal(t, 2, GetAmountScale("PLN"))
 	assert.Equal(t, 2, GetAmountScale("JPY"))
-	assert.Equal(t, 2, GetAmountScale("XAU"))
+	assert.Equal(t, 6, GetAmountScale("XAU"))
+	assert.Equal(t, 6, GetAmountScale("XAG"))
 	assert.Equal(t, 8, GetAmountScale("BTC"))
 	assert.False(t, IsAsset("PLN"))
 	assert.Nil(t, GetAssetInfo("PLN"))
@@ -47,8 +49,10 @@ func TestParseAndFormatAssetAmount_RoundTrip(t *testing.T) {
 		{"BTC", "1.00000001", 100000001},
 		{"BTC", "-0.5", -50000000},
 		{"BTC", "9999999.99999999", 999999999999999},
-		{"XAU", "31.1", 3110},
-		{"XAU", "0.01", 1},
+		{"XAU", "31.1", 31100000},
+		{"XAU", "0.000001", 1},
+		{"XAU", "31.103477", 31103477},
+		{"XAG", "1000", 1000000000},
 		{"DOGE", "12345.123456", 12345123456},
 		{"PLN", "12.34", 1234},
 	} {
@@ -64,13 +68,14 @@ func TestParseAndFormatAssetAmount_RoundTrip(t *testing.T) {
 
 	assert.Equal(t, "0.00123456", FormatAssetAmount("BTC", 123456))
 	assert.Equal(t, "-0.00000001", FormatAssetAmount("BTC", -1))
-	assert.Equal(t, "0.00", FormatAssetAmount("XAU", 0))
+	assert.Equal(t, "0.000000", FormatAssetAmount("XAU", 0))
+	assert.Equal(t, "31.103477", FormatAssetAmount("XAU", 31103477))
 }
 
 func TestParseAssetAmount_Invalid(t *testing.T) {
 	_, err := ParseAssetAmount("BTC", "0.123456789") // 9 decimals
 	assert.NotNil(t, err)
-	_, err = ParseAssetAmount("XAU", "0.001")
+	_, err = ParseAssetAmount("XAU", "0.0000001")
 	assert.NotNil(t, err)
 	_, err = ParseAssetAmount("BTC", "abc")
 	assert.NotNil(t, err)
@@ -81,7 +86,21 @@ func TestParseAssetAmount_Invalid(t *testing.T) {
 func TestTroyOunceConversion(t *testing.T) {
 	assert.InDelta(t, 31.1034768, TroyOuncesToGrams(1), 1e-9)
 	assert.InDelta(t, 1, GramsToTroyOunces(31.1034768), 1e-9)
-	assert.Equal(t, int64(3110), TroyOuncesToStoredMetalAmount(1))
-	assert.Equal(t, int64(1555), TroyOuncesToStoredMetalAmount(0.5))
-	assert.InDelta(t, 1.0, StoredMetalAmountToTroyOunces(3110), 0.001)
+	assert.Equal(t, int64(31103477), TroyOuncesToStoredMetalAmount(1))
+	assert.Equal(t, int64(15551738), TroyOuncesToStoredMetalAmount(0.5))
+	assert.InDelta(t, 1.0, StoredMetalAmountToTroyOunces(31103477), 1e-7)
+}
+
+// ounces -> stored grams -> ounces must give back the entered value at the display precision (4 decimals)
+func TestTroyOunceConversion_RoundTrip(t *testing.T) {
+	for _, ounces := range []float64{0.1, 0.5, 1, 2, 10, 1 / 10.0, 32.150746568627} { // the last one is 1 kg
+		stored := TroyOuncesToStoredMetalAmount(ounces)
+		back := StoredMetalAmountToTroyOunces(stored)
+		assert.Equal(t, math.Round(ounces*10000)/10000, math.Round(back*10000)/10000, "%v oz", ounces)
+	}
+
+	// 1 kg of gold is stored exactly
+	stored, err := ParseAssetAmount("XAU", "1000")
+	assert.Nil(t, err)
+	assert.Equal(t, int64(1000000000), stored)
 }

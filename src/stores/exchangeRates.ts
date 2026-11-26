@@ -2,11 +2,12 @@ import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 
 import { useSettingsStore } from './setting.ts';
+import { useUserStore } from './user.ts';
 
 import { type BeforeResolveFunction, itemAndIndex } from '@/core/base.ts';
 import type { BigDecimal } from '@/core/numeral.ts';
 
-import type { AssetPriceAutoUpdateResponse } from '@/models/asset_price.ts';
+import type { AssetPriceInfo, AssetPriceAutoUpdateResponse } from '@/models/asset_price.ts';
 import type {
     UserCustomExchangeRateUpdateResponse,
     LatestExchangeRate,
@@ -22,6 +23,7 @@ import {
 import { getExchangedAmountByRate } from '@/lib/numeral.ts';
 import { isAssetCurrency } from '@/lib/asset.ts';
 import { shouldRequestAssetPriceUpdate } from '@/lib/asset_price.ts';
+import { convertAssetAmountByPrice, type AssetLatestPrice } from '@/lib/asset_totals.ts';
 import { isOfflineMode } from '@/lib/server_settings.ts';
 
 import logger from '@/lib/logger.ts';
@@ -56,6 +58,11 @@ function clearExchangeRatesFromLocalStorage(): void {
 
 export const useExchangeRatesStore = defineStore('exchangeRates', () => {
     const settingsStore = useSettingsStore();
+    const userStore = useUserStore();
+
+    // The latest price (any date) of every asset which has one, in the user's default currency. It is loaded from the local database of the server
+    // (never from the internet), independent of the exchange rates data source, the offline mode and the exchange rates cache.
+    const latestAssetPrices = ref<Record<string, AssetLatestPrice>>({});
 
     const latestExchangeRates = ref<LatestExchangeRates>(getExchangeRatesFromLocalStorage());
 
@@ -170,13 +177,52 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
         }
     }
 
+    function resetLatestAssetPrices(): void {
+        latestAssetPrices.value = {};
+    }
+
     function resetLatestExchangeRates(): void {
         latestExchangeRates.value = {};
         clearExchangeRatesFromLocalStorage();
     }
 
+    function setLatestAssetPrices(prices: AssetPriceInfo[]): void {
+        const map: Record<string, AssetLatestPrice> = {};
+
+        for (const item of prices) {
+            map[item.asset] = { price: item.price, date: item.date };
+        }
+
+        latestAssetPrices.value = map;
+    }
+
+    // Loads the latest price of every asset (local database only, no outbound request)
+    function loadLatestAssetPrices(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            services.getLatestAssetPrices().then(response => {
+                const data = response.data;
+
+                if (!data || !data.success || !data.result) {
+                    reject({ message: 'Unable to retrieve asset prices' });
+                    return;
+                }
+
+                setLatestAssetPrices(data.result);
+                resolve();
+            }).catch(error => {
+                logger.error('failed to load latest asset prices', error);
+                reject({ message: 'Unable to retrieve asset prices' });
+            });
+        });
+    }
+
     function autoUpdateExchangeRatesData(): void {
+        // the prices of assets are read from the local database, they are needed in every mode
+        loadLatestAssetPrices().catch(() => {});
+
         if (isOfflineMode()) {
+            // the server only reads the local database in offline mode, it is safe to ask for the (manually entered) rates
+            getLatestExchangeRates({ silent: true, force: false }).catch(() => {});
             return;
         }
 
@@ -362,7 +408,7 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
     }
 
     function reloadExchangeRatesAfterAssetPriceChanged(): Promise<void> {
-        return new Promise((resolve, reject) => {
+        return loadLatestAssetPrices().catch(() => {}).then(() => new Promise<void>((resolve, reject) => {
             getLatestExchangeRates({ silent: true, force: true }).then(() => resolve()).catch(error => {
                 if (error && error.isUpToDate) {
                     resolve();
@@ -370,7 +416,7 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
                     reject(error);
                 }
             });
-        });
+        }));
     }
 
     // Returns the price of one unit (one gram for metals, one coin for crypto) of the asset in the default currency
@@ -386,9 +432,24 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
         return defaultCurrencyRate / assetRate;
     }
 
+    // Returns the latest price (any date) of the asset in the default currency, undefined if the asset has no price at all
+    function getAssetLatestPrice(assetCode: string): AssetLatestPrice | undefined {
+        return latestAssetPrices.value[assetCode];
+    }
+
     function getExchangedAmount(amount: BigDecimal, fromCurrency: string, toCurrency: string): BigDecimal | null {
         if (amount.isZero()) {
             return amount;
+        }
+
+        // assets are valued directly with their latest price, so the valuation does not depend on the exchange rates list
+        if (isAssetCurrency(fromCurrency) && toCurrency === userStore.currentUserDefaultCurrency) {
+            const latest = latestAssetPrices.value[fromCurrency];
+            const value = latest ? convertAssetAmountByPrice(amount, fromCurrency, latest.price, toCurrency) : null;
+
+            if (value) {
+                return value;
+            }
         }
 
         if (!latestExchangeRates.value || !latestExchangeRates.value.data || !latestExchangeRates.value.data.exchangeRates) {
@@ -415,6 +476,7 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
     return {
         // states
         latestExchangeRates,
+        latestAssetPrices,
         // computed states
         isUserCustomExchangeRates,
         exchangeRatesLastUpdateTime,
@@ -423,6 +485,7 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
         getExchangeRatesCacheSize,
         removeExpiredExchangeRates,
         resetLatestExchangeRates,
+        resetLatestAssetPrices,
         autoUpdateExchangeRatesData,
         autoUpdateAssetPrices,
         reloadExchangeRatesAfterAssetPriceChanged,
@@ -430,6 +493,8 @@ export const useExchangeRatesStore = defineStore('exchangeRates', () => {
         updateUserCustomExchangeRate,
         deleteUserCustomExchangeRate,
         getAssetPrice,
+        loadLatestAssetPrices,
+        getAssetLatestPrice,
         getExchangedAmount
     };
 });

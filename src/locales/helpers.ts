@@ -201,7 +201,8 @@ import {
 import type { LocaleDefaultSettings } from '@/core/setting.ts';
 import type { ErrorResponse } from '@/core/api.ts';
 
-import { DISPLAY_HIDDEN_AMOUNT, INCOMPLETE_AMOUNT_SUFFIX } from '@/consts/numeral.ts';
+import { DISPLAY_HIDDEN_AMOUNT } from '@/consts/numeral.ts';
+import { getTotalAmountSuffix } from '@/lib/asset_totals.ts';
 import { UTC_TIMEZONE, ALL_TIMEZONES } from '@/consts/timezone.ts';
 import { ALL_CURRENCIES, ALL_ASSETS, ACCOUNT_CURRENCY_NOT_SET_VALUE } from '@/consts/currency.ts';
 import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES, DEFAULT_TRANSFER_CATEGORIES } from '@/consts/category.ts';
@@ -2694,6 +2695,7 @@ export function useI18n() {
                         account => account.category === accountCategory.category);
                 let totalBalance: BigDecimal = BIG_DECIMAL_ZERO;
                 let hasUnCalculatedAmount = false;
+                let hasAssets = false;
 
                 for (const accountBalance of accountsBalance) {
                     if (accountBalance.currency === defaultCurrency) {
@@ -2705,8 +2707,15 @@ export function useI18n() {
                     } else {
                         const balance = exchangeRatesStore.getExchangedAmount(accountBalance.balance, accountBalance.currency, defaultCurrency);
 
+                        if (isAssetCurrency(accountBalance.currency)) {
+                            hasAssets = true;
+                        }
+
                         if (!balance) {
-                            hasUnCalculatedAmount = true;
+                            if (!isAssetCurrency(accountBalance.currency)) {
+                                hasUnCalculatedAmount = true;
+                            }
+
                             continue;
                         }
 
@@ -2720,9 +2729,7 @@ export function useI18n() {
 
                 finalTotalBalance = getFormattedAmountWithCurrency(totalBalance, defaultCurrency);
 
-                if (hasUnCalculatedAmount) {
-                    finalTotalBalance = finalTotalBalance + INCOMPLETE_AMOUNT_SUFFIX;
-                }
+                finalTotalBalance = finalTotalBalance + getTotalAmountSuffix(hasUnCalculatedAmount, hasAssets);
             } else {
                 finalTotalBalance = DISPLAY_HIDDEN_AMOUNT;
             }

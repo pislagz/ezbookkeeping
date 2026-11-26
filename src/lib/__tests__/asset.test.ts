@@ -55,7 +55,7 @@ describe('asset registry', () => {
         }
 
         expect(getCurrencyStorageScale('BTC')).toBe(8);
-        expect(getCurrencyStorageScale('XAU')).toBe(2);
+        expect(getCurrencyStorageScale('XAU')).toBe(6);
         expect(getCurrencyStorageScale('PLN')).toBe(2);
     });
 });
@@ -100,8 +100,9 @@ describe('formatAmount and parseAmount with scale', () => {
 
 describe('metals in grams and troy ounces', () => {
     it('should display grams with 2 decimals', () => {
-        expect(format(3110, 'XAU', 'g')).toBe('31.10');
-        expect(format(1, 'XAG', undefined)).toBe('0.01');
+        expect(format(31100000, 'XAU', 'g')).toBe('31.10');
+        expect(format(10000, 'XAG', undefined)).toBe('0.01');
+        expect(format(31103477, 'XAU', 'g')).toBe('31.103477');
         expect(getAmountUnitLabel('XAU', 'g')).toBe('g');
         expect(getAmountUnitLabel('XAU', 'oz')).toBe('oz');
         expect(getAmountUnitLabel('XAU', 'unexpected')).toBe('g');
@@ -113,31 +114,56 @@ describe('metals in grams and troy ounces', () => {
         const spec = getAmountViewSpec('XAU', 'oz');
         expect(spec.unit).toBe('oz');
         expect(spec.scale).toBe(4);
-        // 31.1034768 g = 1 oz, stored in 0.01 g: 31.10 g = 0.99989 oz
-        expect(storedAmountToViewAmount(3110, spec, 'XAU')).toBe(9999);
-        expect(storedAmountToViewAmount(3111, spec, 'XAU')).toBe(10002);
-        expect(format(3110, 'XAU', 'oz')).toBe('0.9999');
-        expect(format(0, 'XAU', 'oz')).toBe('0.00');
-        expect(format(1555, 'XAU', 'oz')).toBe('0.4999');
-        expect(format(1, 'XAU', 'oz')).toBe('0.0003');
+        // 31.1034768 g = 1 oz, stored in 0.000001 g: 31.103477 g = 1.00000001 oz, displayed as exactly 1
+        expect(storedAmountToViewAmount(31103477, spec, 'XAU')).toBe(10000);
+        expect(format(31103477, 'XAU', 'oz')).toBe('1');
+        expect(format(0, 'XAU', 'oz')).toBe('0');
+        expect(format(15551738, 'XAU', 'oz')).toBe('0.5');
+        expect(format(3110348, 'XAU', 'oz')).toBe('0.1');
+        // data stored with the old precision (31.10 g) is still shown honestly
+        expect(format(31100000, 'XAU', 'oz')).toBe('0.9999');
     });
 
-    it('should convert troy ounces to grams rounded to 0.01 g', () => {
+    it('should convert troy ounces to grams', () => {
         const spec = getAmountViewSpec('XAU', 'oz', true);
         expect(spec.scale).toBe(6);
         expect(parseAmount('1', options('XAU', 'oz', true))).toBe(1000000);
-        expect(viewAmountToStoredAmount(1000000, spec, 'XAU')).toBe(3110);
-        expect(viewAmountToStoredAmount(500000, spec, 'XAU')).toBe(1555);
-        expect(viewAmountToStoredAmount(-1000000, spec, 'XAU')).toBe(-3110);
+        expect(viewAmountToStoredAmount(1000000, spec, 'XAU')).toBe(31103477);
+        expect(viewAmountToStoredAmount(500000, spec, 'XAU')).toBe(15551738);
+        expect(viewAmountToStoredAmount(-1000000, spec, 'XAU')).toBe(-31103477);
         expect(GRAMS_PER_TROY_OUNCE).toBe(31.1034768);
     });
 
-    it('should not change the stored amount when the displayed input value is unchanged (oz view)', () => {
+    it('should round-trip common sizes: ounces entered -> grams stored -> ounces displayed', () => {
+        const inputSpec = getAmountViewSpec('XAU', 'oz', true);
+        const displaySpec = getAmountViewSpec('XAU', 'oz');
+
+        for (const [text, expected] of [['1', '1'], ['0.5', '0.5'], ['0.1', '0.1'], ['2', '2'], ['10', '10'], ['0.25', '0.25'], ['32.150747', '32.1507']] as const) {
+            const stored = viewAmountToStoredAmount(parseAmount(text, options('XAU', 'oz', true)), inputSpec, 'XAU');
+            expect(format(stored, 'XAU', 'oz')).toBe(expected);
+            // the edit form shows the same value again
+            expect(formatAmount(parseBigDecimal(storedAmountToViewAmount(stored, inputSpec, 'XAU')), options('XAU', 'oz', true))).toBe(Number(text).toFixed(Math.max(2, (text.split('.')[1] ?? '').length)));
+            expect(displaySpec.minDecimals).toBe(0);
+        }
+
+        // 1 kg in grams is exact, and is 32.1507 oz
+        expect(format(1000000000, 'XAU', 'g')).toBe('1000.00');
+        expect(format(1000000000, 'XAU', 'oz')).toBe('32.1507');
+    });
+
+    it('should keep the stored amount (within one micro-ounce) when the displayed input value is unchanged (oz view)', () => {
         const spec = getAmountViewSpec('XAU', 'oz', true);
 
-        for (const stored of [1, 2, 3110, 3111, 12345, 99999, 123456789, 999999999999]) {
+        // amounts which come from ounces entered with up to 6 decimals are restored exactly
+        for (const stored of [31103477, 15551738, 3110348, 62206954, 311034768]) {
             const view = storedAmountToViewAmount(stored, spec, 'XAU');
             expect(viewAmountToStoredAmount(view, spec, 'XAU')).toBe(stored);
+        }
+
+        // an arbitrary amount in grams may move by half of one micro-ounce (15.5 micrograms) at most
+        for (const stored of [1, 2, 3110, 12345, 1000000000, 999999999999]) {
+            const view = storedAmountToViewAmount(stored, spec, 'XAU');
+            expect(Math.abs(viewAmountToStoredAmount(view, spec, 'XAU') - stored)).toBeLessThanOrEqual(16);
         }
     });
 
@@ -164,9 +190,9 @@ describe('getExchangedAmountByRate with asset scales', () => {
         expect(converted?.toDoubleNumber()).toBeCloseTo(49382.4, 6);
     });
 
-    it('should convert gold (grams, 2 decimals) to PLN', () => {
+    it('should convert gold (grams, 6 decimals) to PLN', () => {
         // 31.10 g at 500 PLN per gram = 15550 PLN = 1555000 stored
-        const converted = getExchangedAmountByRate(parseBigDecimal(3110), '0.002', '1', 'XAU', 'PLN');
+        const converted = getExchangedAmountByRate(parseBigDecimal(31100000), '0.002', '1', 'XAU', 'PLN');
         expect(converted?.toDoubleNumber()).toBeCloseTo(1555000, 6);
     });
 

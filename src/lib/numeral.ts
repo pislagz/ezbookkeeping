@@ -573,8 +573,11 @@ export function getExchangedAmountByRate(amount: BigDecimal, fromRate: string, t
         let exchangeRate = parseBigDecimal(toRate).divide(parseBigDecimal(fromRate));
         const scaleDiff = getCurrencyStorageScale(toCurrency) - getCurrencyStorageScale(fromCurrency);
 
-        if (scaleDiff !== 0) {
+        if (scaleDiff > 0) {
             exchangeRate = exchangeRate.multiply(10 ** scaleDiff);
+        } else if (scaleDiff < 0) {
+            // divide by an integer power of ten, 10 ** negative is a binary float and makes the result inexact (e.g. 15549.999999)
+            exchangeRate = exchangeRate.divide(10 ** -scaleDiff);
         }
 
         return amount.multiply(exchangeRate);

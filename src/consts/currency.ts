@@ -1300,12 +1300,16 @@ export interface AssetDefinition {
     coinGeckoId?: string;
 }
 
+// Count of decimals of the stored amount of metals (0.000001 g), keep in sync with core.MetalAmountScale.
+// 1 troy ounce = 31.1034768 g is stored as 31.103477 g, so it is displayed as exactly "1 oz".
+export const METAL_AMOUNT_SCALE: number = 6;
+
 // Precious metals and crypto assets which can be used as an account currency. Keep in sync with pkg/core/asset.go
-// Metals: the whole unit is one gram, amounts are stored in 0.01 g (so they can be shown in grams or troy ounces)
+// Metals: the whole unit is one gram, amounts are stored in 0.000001 g (so they can be shown in grams or troy ounces)
 // Crypto: the whole unit is one coin, amounts are stored with the per-asset scale (e.g. 8 decimals for BTC)
 export const ALL_ASSETS: AssetDefinition[] = [
-    { code: 'XAU', kind: 'metal', scale: 2, displayDecimals: 2 },
-    { code: 'XAG', kind: 'metal', scale: 2, displayDecimals: 2 },
+    { code: 'XAU', kind: 'metal', scale: METAL_AMOUNT_SCALE, displayDecimals: 2 },
+    { code: 'XAG', kind: 'metal', scale: METAL_AMOUNT_SCALE, displayDecimals: 2 },
     { code: 'BTC', kind: 'crypto', scale: 8, displayDecimals: 8, coinGeckoId: 'bitcoin' },
     { code: 'ETH', kind: 'crypto', scale: 8, displayDecimals: 8, coinGeckoId: 'ethereum' },
     { code: 'SOL', kind: 'crypto', scale: 8, displayDecimals: 8, coinGeckoId: 'solana' },

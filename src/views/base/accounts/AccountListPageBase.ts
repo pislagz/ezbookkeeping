@@ -13,11 +13,15 @@ import { ACCOUNT_CURRENCY_NOT_SET_VALUE } from '@/consts/currency.ts';
 
 import type { Account, CategorizedAccount } from '@/models/account.ts';
 
+import { useAssetBreakdownBase, type AssetBreakdown } from '@/views/base/accounts/AssetBreakdownBase.ts';
+
 import { isDefined, isObject, isString } from '@/lib/common.ts';
 import { isBigDecimal, parseBigDecimal } from '@/lib/numeral.ts';
 
 export function useAccountListPageBase() {
     const { formatAmountToLocalizedNumeralsWithCurrency } = useI18n();
+
+    const { getAssetBreakdown } = useAssetBreakdownBase();
 
     const settingsStore = useSettingsStore();
     const userStore = useUserStore();
@@ -59,6 +63,10 @@ export function useAccountListPageBase() {
         const totalLiabilities: BigDecimal | HiddenAmount | BigDecimalWithSuffix = accountsStore.getTotalLiabilities(showAccountBalance.value, settingsStore.appSettings.totalAmountExcludeAccountIds);
         return formatAmountToLocalizedNumeralsWithCurrency(totalLiabilities, defaultCurrency.value);
     });
+
+    const netAssetsBreakdown = computed<AssetBreakdown | null>(() => getAssetBreakdown(accountsStore.getNetAssets(showAccountBalance.value, settingsStore.appSettings.totalAmountExcludeAccountIds), defaultCurrency.value));
+    const totalAssetsBreakdown = computed<AssetBreakdown | null>(() => getAssetBreakdown(accountsStore.getTotalAssets(showAccountBalance.value, settingsStore.appSettings.totalAmountExcludeAccountIds), defaultCurrency.value));
+    const totalLiabilitiesBreakdown = computed<AssetBreakdown | null>(() => getAssetBreakdown(accountsStore.getTotalLiabilities(showAccountBalance.value, settingsStore.appSettings.totalAmountExcludeAccountIds), defaultCurrency.value));
 
     function canShowAvailableCredit(account: Account): boolean {
         return account.category === AccountCategory.CreditCard.type && account.numericCreditCardLimit > 0 && !!account.currency && account.currency !== ACCOUNT_CURRENCY_NOT_SET_VALUE;
@@ -168,6 +176,9 @@ export function useAccountListPageBase() {
         netAssets,
         totalAssets,
         totalLiabilities,
+        netAssetsBreakdown,
+        totalAssetsBreakdown,
+        totalLiabilitiesBreakdown,
         // functions
         canShowAvailableCredit,
         accountCategoryTotalBalance,

@@ -47,9 +47,22 @@ export interface NumberFormatOptions {
     readonly trimTailZero?: boolean;
 }
 
+/**
+ * One line of the breakdown of a total that includes assets (precious metals / crypto)
+ */
+export interface AssetBreakdownItem {
+    readonly currency: string; // the asset code
+    readonly amount: BigDecimal; // the summed stored amount (stored scale of the asset)
+    readonly value: BigDecimal | null; // the value in the default currency (stored scale 2), null when the asset has no price
+    readonly price?: string;
+    readonly priceDate?: string;
+}
+
 export interface BigDecimalWithSuffix {
     readonly value: BigDecimal;
     readonly suffix: string;
+    // the assets (precious metals / crypto) included in the value, explained in a popover
+    readonly assetItems?: AssetBreakdownItem[];
 }
 
 export interface NumeralSymbolType {

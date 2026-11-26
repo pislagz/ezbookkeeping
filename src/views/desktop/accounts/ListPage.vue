@@ -4,21 +4,21 @@
             <div class="mx-2 mb-2">
                 <span class="text-body-medium">{{ tt('Net assets') }}</span>
                 <div class="text-body-large text-primary text-truncate mt-1 mb-2">
-                    <span v-if="!loading || allAccountCount > 0">{{ netAssets }}</span>
+                    <span v-if="!loading || allAccountCount > 0"><asset-breakdown-text :text="netAssets" :breakdown="netAssetsBreakdown" /></span>
                     <span v-else-if="loading && allAccountCount <= 0">
                         <v-skeleton-loader class="skeleton-no-margin mt-1 mb-2" type="text" :loading="true"></v-skeleton-loader>
                     </span>
                 </div>
                 <span class="text-body-medium">{{ tt('Total liabilities') }}</span>
                 <div class="text-body-large text-expense text-truncate mt-1 mb-2">
-                    <span v-if="!loading || allAccountCount > 0">{{ totalLiabilities }}</span>
+                    <span v-if="!loading || allAccountCount > 0"><asset-breakdown-text :text="totalLiabilities" :breakdown="totalLiabilitiesBreakdown" /></span>
                     <span v-else-if="loading && allAccountCount <= 0">
                         <v-skeleton-loader class="skeleton-no-margin mt-1 mb-1" type="text" :loading="true"></v-skeleton-loader>
                     </span>
                 </div>
                 <span class="text-body-medium">{{ tt('Total assets') }}</span>
                 <div class="text-body-large mt-1">
-                    <span v-if="!loading || allAccountCount > 0">{{ totalAssets }}</span>
+                    <span v-if="!loading || allAccountCount > 0"><asset-breakdown-text :text="totalAssets" :breakdown="totalAssetsBreakdown" /></span>
                     <span v-else-if="loading && allAccountCount <= 0">
                         <v-skeleton-loader class="skeleton-no-margin mt-3 mb-2 pb-1" type="text" :loading="true"></v-skeleton-loader>
                     </span>
@@ -336,6 +336,7 @@
 </template>
 
 <script setup lang="ts">
+import AssetBreakdownText from '@/components/desktop/AssetBreakdownText.vue';
 import ConfirmDialog from '@/components/desktop/ConfirmDialog.vue';
 import EditDialog from './list/dialogs/EditDialog.vue';
 import ReconciliationStatementDialog from './list/dialogs/ReconciliationStatementDialog.vue';
@@ -411,6 +412,9 @@ const {
     allAccountCount,
     netAssets,
     totalAssets,
+    netAssetsBreakdown,
+    totalAssetsBreakdown,
+    totalLiabilitiesBreakdown,
     totalLiabilities,
     canShowAvailableCredit,
     accountCategoryTotalBalance,
