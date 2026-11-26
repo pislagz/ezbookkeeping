@@ -19,7 +19,7 @@ Assets use a per-asset *scale*: `stored = amount * 10^scale`.
 
 | Asset | Whole unit | Scale | Smallest unit | Max amount (limit 999,999,999,999,999 stored) |
 |---|---|---|---|---|
-| XAU, XAG | 1 gram | 2 | 0.01 g | 9,999,999,999,999.99 g |
+| XAU, XAG | 1 gram | 6 | 0.000001 g (1 µg) | 999,999,999.999999 g |
 | BTC, ETH, SOL, DOT, LTC, BNB, AVAX, LINK, XMR | 1 coin | 8 | 0.00000001 | 9,999,999.99999999 |
 | USDT, USDC, XRP, ADA, DOGE, TRX | 1 coin | 6 | 0.000001 | 999,999,999.999999 |
 
@@ -30,17 +30,23 @@ Assets use a per-asset *scale*: `stored = amount * 10^scale`.
 
 ### Gold and silver in grams or troy ounces
 
-Metals are always stored in grams (0.01 g steps). The display/entry unit is a **device-local app setting** `metalDisplayUnit` (`g` default, or `oz`; Settings → Preferences → "Unit of Precious Metals").
+Metals are always stored in grams (0.000001 g steps; until PR #7 it was 0.01 g, see "Metal scale migration" below). The display/entry unit is a **device-local app setting** `metalDisplayUnit` (`g` default, or `oz`; Settings → Preferences → "Unit of Precious Metals").
 
 * 1 troy ounce = 31.1034768 g (`GRAMS_PER_TROY_OUNCE`).
-* In `oz` view amounts are shown with up to 4 decimals in lists and 6 decimals in inputs (so a stored value always survives a display → edit → save cycle unchanged); typed ounces are converted to grams and rounded to 0.01 g.
-* Amounts are displayed with a unit label: `31.10 g`, `1.00 oz`, `0.00123456 BTC`.
+* In `oz` view amounts are rounded to 4 decimals in lists (trailing zeros trimmed, so 1 oz is shown as `1 oz`, never `0.99999 oz`) and 6 decimals in inputs; typed ounces are converted to grams and rounded to 0.000001 g (1 oz = 31.103477 g stored). Amounts that came from ounces survive a display → edit → save cycle exactly; an arbitrary gram amount may move by at most 16 µg when it is re-saved from the oz form.
+* Amounts are displayed with a unit label: `31.10 g`, `1 oz`, `0.00123456 BTC`.
 * The `oz` preference does not affect crypto assets.
 * Implementation: `src/lib/asset.ts` (`getAmountViewSpec`, `storedAmountToViewAmount`, `viewAmountToStoredAmount`) and the `scale`-aware `formatAmount` / `parseAmount` in `src/lib/numeral.ts`. `src/locales/helpers.ts` wires them into every formatter (`getNumberFormatOptions`, `getViewAmount`), so the lists, overview and statistics use them automatically.
 
 ### Currency selection
 
 In account forms (desktop `CurrencySelect` with `with-assets`, mobile account edit page) the assets are appended after the normal currencies and labelled with their group: "Gold (Metals)", "Bitcoin (Crypto)" (Polish: "Metale szlachetne" / "Kryptowaluty"). The label is part of the display name, so typing "krypto" in the filter finds all of them.
+
+### Metal scale migration (PR #7)
+
+PR #1 stored metals in 0.01 g, which cannot represent whole ounces (1 oz = 31.1034768 g → 31.10 g → 0.99989 oz). The scale is now 6 (`core.MetalAmountScale`, `METAL_AMOUNT_SCALE`).
+`services.DataMigrations.MigrateMetalAmountScale` multiplies every stored metal amount by 10^4 once: `account.balance` (and a credit card limit, if any) of XAU/XAG accounts (deleted ones included), `transaction.amount` of rows of metal accounts and `transaction.related_account_amount` of rows whose related account is a metal account (transfers on either side, deleted rows included), and the same two columns of `transaction_template` (templates and scheduled transactions). Asset **prices** are per gram (`asset_price.price`, ×10^10) and do not depend on the amount scale, they are not touched.
+It runs inside `database update` and at server start when `auto_update_database` is on, in one transaction together with a marker row in the new table `data_migration` (`metal_amount_scale_6`), so a second run does nothing; an overflow aborts and rolls back everything. A transaction entered as `31.10 g` before stays 31.100000 g (0.9999 oz) - re-edit it as `1 oz` if that was the intent.
 
 ## Price history and valuation in the default currency (PLN)
 
@@ -50,7 +56,12 @@ Totals on the overview/accounts pages are computed in the frontend with `exchang
 2. `date` is a plain calendar date `YYYY-MM-DD` without timezone: NBP prices use the date published by NBP (Poland), CoinGecko prices use the **UTC date** of the fetch, manual prices use the date typed by the user (the UI proposes the local date; the server accepts at most "tomorrow UTC").
 3. **One price per (user, asset, date). A manual price always wins over an automatic one**: saving a manual price replaces an automatic row of the same date; the automatic update never overwrites a manual row (`models.PlanAutoAssetPriceWrites`); an automatic price of the same date is refreshed by the next automatic update (the latest price of the day wins). If you delete a manual price inside the fetched window, the next automatic update fills the day again.
 4. `ExchangeRatesDataProviderContainer.GetLatestExchangeRates` post-processes the response of the configured provider: `appendAssetExchangeRates` reads the **latest price (greatest date) of every asset** (`AssetPricesService.GetLatestPrices`) and `mergeAssetPricesToExchangeRates` adds `rate(asset) = rate(default currency) / price`, so the format is the same as any other rate and works with NBP, ECB, user custom etc. Normal currency rates are unaffected. The frontend is unchanged by this (`getExchangedAmountByRate` multiplies by `10^(scale(to) - scale(from))`).
-5. If no price exists for an asset the rate is missing and the account is excluded from the totals, exactly like a currency without an exchange rate.
+5. If no price exists for an asset the rate is missing; the totals do not depend on it any more (see below).
+
+### Totals and the "*" marker (PR #7)
+
+The frontend values asset accounts **directly with the latest price** (`GET /asset_prices/latest.json`, kept in `exchangeRatesStore.latestAssetPrices`, loaded at every app start also in offline mode, and after every price change) instead of the server-built rate list: `exchangeRatesStore.getExchangedAmount(asset → default currency)` uses it first (`convertAssetAmountByPrice` in `src/lib/asset_totals.ts`). Before, totals showed `117 700,00 zł+` whenever the rate list lacked the asset: offline mode never loaded the rate list at all, a disabled "auto update exchange rates" setting or a cache of the same day kept an old list, and silver without a price is simply missing.
+Totals (net assets, total assets, total liabilities, category subtotals) that contain assets end with `*` (ordinary currencies without a rate still give `+`, both: `+*`) and the value has a hover (desktop) / tap (mobile) popover listing every asset with its amount in the preferred unit, its value and the date of the price used; an asset without any price is listed as "no price, not included" and is the only asset excluded from the sum.
 
 **Migration of the PR #1 manual prices:** PR #1 stored manual prices in `user_custom_exchange_rates` (`rate_column = price * 10^8`). On first use (`AssetPricesService.MigrateLegacyPrices`, called by every history read and by the auto update) these rows are copied into `asset_price` as `manual` prices dated by the day they were saved (UTC), never overwriting an existing history row, and the legacy rows are marked deleted (the usual soft delete). The old endpoint `exchange_rates/user_custom/update.json` still accepts asset codes, but nothing in the UI uses it any more (its rows are migrated again on next read).
 

@@ -7,6 +7,7 @@ import (
 	"github.com/mayswind/ezbookkeeping/pkg/datastore"
 	"github.com/mayswind/ezbookkeeping/pkg/log"
 	"github.com/mayswind/ezbookkeeping/pkg/models"
+	"github.com/mayswind/ezbookkeeping/pkg/services"
 )
 
 // Database represents the database command
@@ -196,6 +197,26 @@ func updateAllDatabaseTablesStructure(c *core.CliContext) error {
 	}
 
 	log.BootInfof(c, "[database.updateAllDatabaseTablesStructure] insights explorer table maintained successfully")
+
+	err = datastore.Container.UserDataStore.SyncStructs(new(models.DataMigration))
+
+	if err != nil {
+		return err
+	}
+
+	log.BootInfof(c, "[database.updateAllDatabaseTablesStructure] data migration table maintained successfully")
+
+	// one-time data migrations, they run after all tables are up to date and only once (see models.DataMigration)
+	migrated, err := services.DataMigrations.MigrateMetalAmountScale(c)
+
+	if err != nil {
+		log.BootErrorf(c, "[database.updateAllDatabaseTablesStructure] migrate the amounts of precious metals failed, because %s", err.Error())
+		return err
+	}
+
+	if migrated {
+		log.BootInfof(c, "[database.updateAllDatabaseTablesStructure] the amounts of precious metals were migrated to the new scale successfully")
+	}
 
 	return nil
 }

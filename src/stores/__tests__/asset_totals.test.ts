@@ -47,7 +47,7 @@ describe('totals with assets', () => {
         const exchangeRatesStore = useExchangeRatesStore();
         // 1 oz stored in 0.01 g
         exchangeRatesStore.latestAssetPrices = { XAU: { price: '480.5', date: '2026-11-20' } };
-        setAccounts([account('a', 'PLN', '10000000'), account('b', 'XAU', '3110')]);
+        setAccounts([account('a', 'PLN', '10000000'), account('b', 'XAU', '31100000')]);
 
         const total = useAccountsStore().getTotalAssets(true, {}) as BigDecimalWithSuffix;
 
@@ -74,7 +74,7 @@ describe('totals with assets', () => {
     it('keeps the asterisk and excludes an asset without any price', () => {
         const exchangeRatesStore = useExchangeRatesStore();
         exchangeRatesStore.latestAssetPrices = { XAU: { price: '500', date: '2026-11-20' } };
-        setAccounts([account('a', 'PLN', '1000'), account('b', 'XAU', '3110'), account('s', 'XAG', '50000')]);
+        setAccounts([account('a', 'PLN', '1000'), account('b', 'XAU', '31100000'), account('s', 'XAG', '500000000')]);
 
         const total = useAccountsStore().getTotalAssets(true, {}) as BigDecimalWithSuffix;
 
@@ -82,7 +82,7 @@ describe('totals with assets', () => {
         expect(total.value.toString()).toBe((1000 + 1555000).toString());
         const silver = total.assetItems?.find(item => item.currency === 'XAG');
         expect(silver?.value).toBeNull();
-        expect(silver?.amount.toString()).toBe('50000');
+        expect(silver?.amount.toString()).toBe('500000000');
     });
 
     it('keeps the upstream "+" for an ordinary currency without a rate', () => {
@@ -98,7 +98,7 @@ describe('totals with assets', () => {
     it('combines both markers and does not mark totals without assets', () => {
         const exchangeRatesStore = useExchangeRatesStore();
         exchangeRatesStore.latestAssetPrices = { XAU: { price: '500', date: '2026-11-20' } };
-        setAccounts([account('b', 'XAU', '3110'), account('u', 'USD', '5000')]);
+        setAccounts([account('b', 'XAU', '31100000'), account('u', 'USD', '5000')]);
 
         expect((useAccountsStore().getTotalAssets(true, {}) as BigDecimalWithSuffix).suffix).toBe('+*');
 
@@ -109,7 +109,7 @@ describe('totals with assets', () => {
     it('counts liabilities with the negative sign', () => {
         const exchangeRatesStore = useExchangeRatesStore();
         exchangeRatesStore.latestAssetPrices = { XAU: { price: '500', date: '2026-11-20' } };
-        const liability = { ...account('l', 'XAU', '3110'), isAsset: false, isLiability: true } as unknown as Account;
+        const liability = { ...account('l', 'XAU', '31100000'), isAsset: false, isLiability: true } as unknown as Account;
         setAccounts([liability]);
 
         const total = useAccountsStore().getTotalLiabilities(true, {}) as BigDecimalWithSuffix;

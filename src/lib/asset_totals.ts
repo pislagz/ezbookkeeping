@@ -29,8 +29,13 @@ export function convertAssetAmountByPrice(amount: BigDecimal, assetCode: string,
         }
 
         const scaleDiff = getCurrencyStorageScale(toCurrency) - getCurrencyStorageScale(assetCode);
-        const factor = scaleDiff === 0 ? priceValue : priceValue.multiply(10 ** scaleDiff);
-        return amount.multiply(factor);
+
+        if (scaleDiff >= 0) {
+            return amount.multiply(priceValue).multiply(10 ** scaleDiff);
+        }
+
+        // multiply first and divide by an integer power of ten last, so the result is exact (10 ** negative is an inexact float)
+        return amount.multiply(priceValue).divide(10 ** -scaleDiff);
     } catch {
         return null;
     }

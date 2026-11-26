@@ -18,6 +18,13 @@ const (
 	ASSET_KIND_CRYPTO AssetKind = 2
 )
 
+// MetalAmountScale is the number of decimals which amounts of precious metals are stored with (grams * 10^6, i.e. micrograms).
+// 1 troy ounce = 31.1034768 g is stored as 31.103477 g, so ounces round-trip exactly at the displayed precision
+const MetalAmountScale = 6
+
+// LegacyMetalAmountScale is the scale which metal amounts were stored with before MetalAmountScale (0.01 g), used by the database migration only
+const LegacyMetalAmountScale = 2
+
 // DefaultAmountScale is the number of decimal places that every normal (ISO 4217) currency amount is stored with in database (amount * 10^2)
 const DefaultAmountScale = 2
 
@@ -38,9 +45,9 @@ type AssetInfo struct {
 
 // AllAssets contains all supported assets, ordered by the display order
 var AllAssets = []*AssetInfo{
-	// Metals: internal unit is gram, stored in 0.01 g
-	{Code: "XAU", Kind: ASSET_KIND_METAL, Scale: 2, DisplayDecimals: 2},
-	{Code: "XAG", Kind: ASSET_KIND_METAL, Scale: 2, DisplayDecimals: 2},
+	// Metals: internal unit is gram, stored in 0.000001 g
+	{Code: "XAU", Kind: ASSET_KIND_METAL, Scale: MetalAmountScale, DisplayDecimals: 2},
+	{Code: "XAG", Kind: ASSET_KIND_METAL, Scale: MetalAmountScale, DisplayDecimals: 2},
 	// Crypto
 	{Code: "BTC", Kind: ASSET_KIND_CRYPTO, Scale: 8, DisplayDecimals: 8, CoinGeckoId: "bitcoin"},
 	{Code: "ETH", Kind: ASSET_KIND_CRYPTO, Scale: 8, DisplayDecimals: 8, CoinGeckoId: "ethereum"},
@@ -72,6 +79,19 @@ var assetsByCode = func() map[string]*AssetInfo {
 // GetAssetInfo returns the asset information by code, or nil if the code is not an asset
 func GetAssetInfo(code string) *AssetInfo {
 	return assetsByCode[code]
+}
+
+// GetMetalCodesAsArgs returns the codes of all precious metals as a list of query arguments
+func GetMetalCodesAsArgs() []any {
+	codes := make([]any, 0)
+
+	for _, asset := range AllAssets {
+		if asset.Kind == ASSET_KIND_METAL {
+			codes = append(codes, asset.Code)
+		}
+	}
+
+	return codes
 }
 
 // IsAsset returns whether the code is a supported asset (precious metal or crypto currency)
@@ -151,12 +171,12 @@ func TroyOuncesToGrams(ounces float64) float64 {
 	return ounces * GramsPerTroyOunce
 }
 
-// TroyOuncesToStoredMetalAmount converts troy ounces to the stored amount of a metal (0.01 g units), rounded to nearest
+// TroyOuncesToStoredMetalAmount converts troy ounces to the stored amount of a metal (0.000001 g units), rounded to nearest
 func TroyOuncesToStoredMetalAmount(ounces float64) int64 {
-	return int64(math.Round(TroyOuncesToGrams(ounces) * math.Pow10(DefaultAmountScale)))
+	return int64(math.Round(TroyOuncesToGrams(ounces) * math.Pow10(MetalAmountScale)))
 }
 
-// StoredMetalAmountToTroyOunces converts the stored amount of a metal (0.01 g units) to troy ounces
+// StoredMetalAmountToTroyOunces converts the stored amount of a metal (0.000001 g units) to troy ounces
 func StoredMetalAmountToTroyOunces(amount int64) float64 {
-	return GramsToTroyOunces(float64(amount) / math.Pow10(DefaultAmountScale))
+	return GramsToTroyOunces(float64(amount) / math.Pow10(MetalAmountScale))
 }

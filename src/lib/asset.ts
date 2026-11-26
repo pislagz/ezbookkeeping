@@ -72,7 +72,8 @@ export function getAmountViewSpec(currencyCode?: string, metalUnit?: string, for
         const unit = normalizeMetalUnit(metalUnit);
 
         if (unit === 'oz') {
-            return { scale: forInput ? OUNCE_INPUT_SCALE : OUNCE_DISPLAY_SCALE, minDecimals: 2, unit: 'oz' };
+            // the amount is rounded to the display scale and trailing zeros are trimmed in lists, so 1 oz is shown as "1 oz" and not as "0.99999 oz" / "1.00 oz"
+            return { scale: forInput ? OUNCE_INPUT_SCALE : OUNCE_DISPLAY_SCALE, minDecimals: forInput ? 2 : 0, unit: 'oz' };
         }
 
         return { scale: asset.scale, minDecimals: 2, unit: 'g' };

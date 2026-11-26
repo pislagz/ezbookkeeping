@@ -6,7 +6,7 @@ import { parseBigDecimal } from '@/lib/numeral.ts';
 describe('convertAssetAmountByPrice', () => {
     it('values grams stored with the metal scale in the default currency scale (2)', () => {
         // 31.10 g * 480.5 PLN/g = 14943.55 PLN
-        const gold = convertAssetAmountByPrice(parseBigDecimal(3110), 'XAU', '480.5', 'PLN');
+        const gold = convertAssetAmountByPrice(parseBigDecimal(31100000), 'XAU', '480.5', 'PLN');
         expect(gold?.truncate().toString()).toBe('1494355');
     });
 
@@ -16,8 +16,8 @@ describe('convertAssetAmountByPrice', () => {
     });
 
     it('rejects invalid prices and non-assets', () => {
-        expect(convertAssetAmountByPrice(parseBigDecimal(100), 'XAU', '0', 'PLN')).toBeNull();
-        expect(convertAssetAmountByPrice(parseBigDecimal(100), 'XAU', 'abc', 'PLN')).toBeNull();
+        expect(convertAssetAmountByPrice(parseBigDecimal(1000000), 'XAU', '0', 'PLN')).toBeNull();
+        expect(convertAssetAmountByPrice(parseBigDecimal(1000000), 'XAU', 'abc', 'PLN')).toBeNull();
         expect(convertAssetAmountByPrice(parseBigDecimal(100), 'USD', '4', 'PLN')).toBeNull();
     });
 });

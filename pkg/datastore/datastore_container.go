@@ -60,6 +60,11 @@ func InitializeDataStore(config *settings.Config) error {
 	return nil
 }
 
+// NewDatabase creates a database instance according to the database config
+func NewDatabase(dbConfig *settings.DatabaseConfig) (Database, error) {
+	return initializeDatabase(dbConfig)
+}
+
 func initializeDatabase(dbConfig *settings.DatabaseConfig) (*XOrmDatabase, error) {
 	var connStr string
 	var err error
