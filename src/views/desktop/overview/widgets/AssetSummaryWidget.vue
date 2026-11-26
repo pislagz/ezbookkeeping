@@ -18,7 +18,7 @@
                     </v-avatar>
                     <div class="d-flex flex-column gap-1 text-truncate">
                         <span class="overview-widget__caption text-body-medium">{{ tt(item.title) }}</span>
-                        <span class="overview-widget__amount text-title-large text-truncate" :class="{ 'text-primary': item.color === 'primary' }" v-if="!loading || (allAccounts && allAccounts.length)">{{ item.value }}</span>
+                        <span class="overview-widget__amount text-title-large text-truncate" :class="{ 'text-primary': item.color === 'primary' }" v-if="!loading || (allAccounts && allAccounts.length)"><asset-breakdown-text :text="item.value" :breakdown="item.breakdown" /></span>
                         <v-skeleton-loader class="skeleton-no-margin pb-2" style="margin-top: 6px" width="120px" type="text" :loading="true" v-else-if="loading && (!allAccounts || !allAccounts.length)"></v-skeleton-loader>
                     </div>
                 </div>
@@ -29,11 +29,13 @@
 
 <script setup lang="ts">
 import OverviewWidgetHeader from './OverviewWidgetHeader.vue';
+import AssetBreakdownText from '@/components/desktop/AssetBreakdownText.vue';
 
 import { computed } from 'vue';
 
 import { useI18n } from '@/locales/helpers.ts';
 import { useAssetSummaryWidgetBase } from '@/views/base/overview/AssetSummaryWidgetBase.ts';
+import type { AssetBreakdown } from '@/views/base/accounts/AssetBreakdownBase.ts';
 
 import {
     mdiBankOutline,
@@ -44,6 +46,7 @@ import {
 interface SummaryItem {
     title: string;
     value: string;
+    breakdown: AssetBreakdown | null;
     icon: string;
     color: string;
 }
@@ -59,7 +62,10 @@ const {
     allAccounts,
     netAssets,
     totalAssets,
-    totalLiabilities
+    totalLiabilities,
+    netAssetsBreakdown,
+    totalAssetsBreakdown,
+    totalLiabilitiesBreakdown
 } = useAssetSummaryWidgetBase('overview');
 
 const displayAccountCount = computed<string>(() => formatNumberToLocalizedNumerals(allAccounts.value?.length ?? 0));
@@ -68,18 +74,21 @@ const summaryItems = computed<SummaryItem[]>(() => [
     {
         title: 'Total assets',
         value: totalAssets.value,
+        breakdown: totalAssetsBreakdown.value,
         icon: mdiBankOutline,
         color: 'grey'
     },
     {
         title: 'Total liabilities',
         value: totalLiabilities.value,
+        breakdown: totalLiabilitiesBreakdown.value,
         icon: mdiCreditCardOutline,
         color: 'expense'
     },
     {
         title: 'Net assets',
         value: netAssets.value,
+        breakdown: netAssetsBreakdown.value,
         icon: mdiPiggyBankOutline,
         color: 'primary'
     }
